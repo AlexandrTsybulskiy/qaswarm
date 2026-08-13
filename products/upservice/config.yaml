@@ -1,0 +1,12 @@
+id: upservice
+name: Upservice
+public_api:
+  base_url: https://public.upservice.io/
+  catalog_hint: /openapi.json
+  token_env: UPSERVICE_PUBLIC_API_TOKEN
+# internal_api:
+#   base_url: https://internal-api.example.com
+#   token_env: INTERNAL_API_TOKEN
+mcp:
+  browser: false
+ttl_hours: 168
