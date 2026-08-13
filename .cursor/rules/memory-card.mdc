@@ -1,0 +1,19 @@
+---
+description: Canonical memory card schema for QA swarm
+globs: memory/**/*.md
+alwaysApply: false
+---
+
+# Memory cards
+
+Entity files live in `memory/<product-id>/entities/<slug>.md`.
+
+Required YAML frontmatter: `slug`, `title`, `status` (`map`|`deep`|`stale`), `source` (`public`|`internal`|`browser`), `fetched_at` (ISO-8601 with offset), `product`.
+
+`slug` and filename stem must match `[a-z0-9-]+`.
+
+No tokens, passwords, or raw Authorization values. If a secret appeared in source data, write that the field exists and the value is hidden.
+
+Coordinator and Hunter must not edit these files. Only the `librarian` subagent writes them.
+
+Validate with: `python tools/memory_schema.py memory/<product-id>`
