@@ -1,0 +1,28 @@
+{
+  "channel": "public",
+  "fetched_at": "2026-08-13T17:00:00+03:00",
+  "base_url": "https://api.demo.example",
+  "resources": [
+    {
+      "path": "/users",
+      "methods": ["GET"],
+      "title": "User",
+      "slug_hint": "user",
+      "summary": "Account of a person in the demo product."
+    },
+    {
+      "path": "/orders",
+      "methods": ["GET", "POST"],
+      "title": "Order",
+      "slug_hint": "order",
+      "summary": "Purchase made by a user."
+    }
+  ],
+  "errors": [
+    {
+      "channel": "public",
+      "code": "no-description",
+      "message": "Payment resource has no description in the catalog."
+    }
+  ]
+}
