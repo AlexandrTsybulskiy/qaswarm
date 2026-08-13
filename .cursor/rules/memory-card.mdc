@@ -16,4 +16,6 @@ No tokens, passwords, or raw Authorization values. If a secret appeared in sourc
 
 Coordinator and Hunter must not edit these files. Only the `librarian` subagent writes them.
 
+Task snapshots live in `memory/<product-id>/tasks/task-<id>.md` (entity frontmatter plus `task_id`). Requirement cards live in `memory/<product-id>/requirements/task-<id>.md` with requirement fields from the spec. Only librarian writes both.
+
 Validate with: `python tools/memory_schema.py memory/<product-id>`

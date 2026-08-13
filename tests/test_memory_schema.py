@@ -103,3 +103,141 @@ def test_authorization_bearer_value_in_card_fails(tmp_path: Path) -> None:
     )
     errors = memory_schema.validate_card(card)
     assert any("secret" in e.lower() for e in errors)
+
+
+REQ_INCOMING = ROOT / "fixtures" / "demo-requirement" / "incoming"
+REQ_EXPECTED = ROOT / "fixtures" / "demo-requirement" / "expected"
+
+
+def test_demo_catalog_tree_still_valid_without_requirements() -> None:
+    errors = memory_schema.validate_memory_tree(EXPECTED)
+    assert errors == []
+
+
+def test_requirement_card_valid() -> None:
+    card = REQ_EXPECTED / "requirements" / "task-1.md"
+    assert memory_schema.validate_requirement_card(card) == []
+
+
+def test_requirement_ready_without_arrow_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        "---\nslug: task-1\ntitle: Demo\nproduct: demo\ntask_id: 1\n"
+        "status: ready\nsource_task: upservice\nsource_design: none\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nfigma_urls: none\nentities: none\n"
+        "---\n\nSummary.\n\n## Testable\n\n- no expected result\n\n## Gaps\n\n- none\n\n"
+        "Did not write to Upservice.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_requirement_card(card)
+    assert any("Testable" in e or "arrow" in e.lower() for e in errors)
+
+
+def test_requirement_ready_requires_arrow_in_list_item(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        "---\nslug: task-1\ntitle: Demo\nproduct: demo\ntask_id: 1\n"
+        "status: ready\nsource_task: upservice\nsource_design: none\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nfigma_urls: none\nentities: none\n"
+        "---\n\nSummary.\n\n## Testable\n\nProse action → expected result.\n\n"
+        "- no expected result\n\n## Gaps\n\n- none\n\nDid not write to Upservice.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_requirement_card(card)
+    assert any("Testable item with arrow" in e for e in errors)
+
+
+def test_requirement_requires_gaps_heading(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        "---\nslug: task-1\ntitle: Demo\nproduct: demo\ntask_id: 1\n"
+        "status: draft\nsource_task: upservice\nsource_design: none\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nfigma_urls: none\nentities: none\n"
+        "---\n\nSummary.\n\n## Testable\n\n- none\n\nDid not write to Upservice.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_requirement_card(card)
+    assert any("## Gaps" in e for e in errors)
+
+
+def test_requirement_requires_no_write_notice(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        "---\nslug: task-1\ntitle: Demo\nproduct: demo\ntask_id: 1\n"
+        "status: draft\nsource_task: upservice\nsource_design: none\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nfigma_urls: none\nentities: none\n"
+        "---\n\nSummary.\n\n## Testable\n\n- none\n\n## Gaps\n\n- none\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_requirement_card(card)
+    assert any("Did not write to Upservice" in e for e in errors)
+
+
+def test_requirement_slug_must_match_task_id(tmp_path: Path) -> None:
+    card = tmp_path / "task-9.md"
+    card.write_text(
+        "---\nslug: task-9\ntitle: Demo\nproduct: demo\ntask_id: 1\n"
+        "status: draft\nsource_task: upservice\nsource_design: none\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nfigma_urls: none\nentities: none\n"
+        "---\n\nSummary.\n\n## Testable\n\n## Gaps\n\n- no design\n\n"
+        "Did not write to Upservice.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_requirement_card(card)
+    assert any("task_id" in e or "slug" in e for e in errors)
+
+
+def test_requirement_task_id_must_be_normalized(tmp_path: Path) -> None:
+    card = tmp_path / "task-abc.md"
+    card.write_text(
+        "---\nslug: task-abc\ntitle: Demo\nproduct: demo\ntask_id: ABC\n"
+        "status: draft\nsource_task: upservice\nsource_design: none\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nfigma_urls: none\nentities: none\n"
+        "---\n\nSummary.\n\n## Testable\n\n- none\n\n## Gaps\n\n- none\n\n"
+        "Did not write to Upservice.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_requirement_card(card)
+    assert any("invalid task_id" in e for e in errors)
+
+
+def test_task_snapshot_requires_task_id(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        "---\nslug: task-1\ntitle: Task 1\nstatus: deep\nsource: public\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nproduct: demo\n---\n\nA task.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_task_snapshot(card)
+    assert any("task_id" in e for e in errors)
+
+
+def test_task_snapshot_task_id_must_be_normalized(tmp_path: Path) -> None:
+    card = tmp_path / "task-ABC.md"
+    card.write_text(
+        "---\nslug: task-ABC\ntitle: Task ABC\nstatus: deep\nsource: public\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nproduct: demo\ntask_id: ABC\n"
+        "---\n\nA task.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_task_snapshot(card)
+    assert any("invalid task_id" in e for e in errors)
+
+
+def test_memory_tree_validates_spec_only_requirement_slug(tmp_path: Path) -> None:
+    requirements = tmp_path / "requirements"
+    requirements.mkdir()
+    (requirements / "index.md").write_text("# Requirements\n", encoding="utf-8")
+    (requirements / "checkout-spec.md").write_text(
+        "---\nslug: checkout-spec\ntitle: Checkout\nproduct: demo\ntask_id: none\n"
+        "status: draft\nsource_task: none\nsource_design: none\n"
+        "fetched_at: 2026-08-13T17:00:00+03:00\nfigma_urls: none\nentities: none\n"
+        "---\n\nSummary without required sections.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_memory_tree(tmp_path)
+    assert any("checkout-spec.md" in e and "## Gaps" in e for e in errors)
+
+
+def test_demo_requirement_incoming_complete() -> None:
+    assert memory_schema.incoming_complete(REQ_INCOMING) is True

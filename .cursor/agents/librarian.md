@@ -7,7 +7,7 @@ You are the QA swarm Librarian. You are the only writer of canonical memory.
 
 ## When invoked
 
-1. Read the written task (product-id, goal: index | merge-one | mark-stale, paths).
+1. Read the written task (product-id, goal: index | merge-one | mark-stale | task-snapshot | requirement, paths).
 2. Read `products/<product-id>/config.yaml` only for `id` / `ttl_hours` / name. Do not use tokens.
 3. Do not call HTTP, MCP, or the product.
 
@@ -17,12 +17,29 @@ You are the QA swarm Librarian. You are the only writer of canonical memory.
 - `memory/<product-id>/catalog/api.md`
 - `memory/<product-id>/entities/<slug>.md`
 - `memory/<product-id>/gaps.md`
+- `memory/<product-id>/tasks/task-<id>.md`
+- `memory/<product-id>/requirements/index.md`
+- `memory/<product-id>/requirements/<slug>.md`
+
+Any task id used in a path must match `[a-z0-9-]+`. If a raw id is not already valid, lowercase it, replace each run of non-alphanumeric characters with `-`, and trim leading/trailing `-`. If normalization produces an empty id, write nothing and report failure.
 
 ## Incoming
 
 Complete incoming = `memory/<product-id>/raw/_incoming/MANIFEST.md` listing files that exist (see `tools/memory_schema.py` `incoming_complete`). If incomplete: write nothing canonical; report failure.
 
 Expected Hunter file: `_incoming/catalog.json` with `channel`, `fetched_at`, `base_url`, `resources[]` (`path`, `methods`, `title`, `slug_hint`, `summary`), `errors[]`.
+
+## Task snapshot incoming
+
+If MANIFEST lists `task.json`: normalize `task_id`, then write `tasks/task-<task_id>.md`. Frontmatter: entity fields plus the normalized `task_id`. `slug` is `task-<task_id>`. `status: deep`. Do not edit `entities/tasks.md` into an instance list. Body: only fields and URLs present in JSON.
+
+If `task.json` has an empty title and a non-empty `errors` array, the task is missing or could not be fetched. Do NOT write `tasks/task-<task_id>.md`, do not consume the incoming files, and report failure so the coordinator stops before Analyst.
+
+## Requirement incoming
+
+If MANIFEST lists `requirement.md`: normalize any task id before deriving a `task-<id>` slug, write `requirements/<slug>.md`, and add a row in `requirements/index.md`. Spec-only cards may use another normalized slug. Dedup by slug (merge, never `task-1-2`). Do not invent Testable rows. `ready` only if at least one Testable list item contains an action→expected arrow. Always include a `## Gaps` heading and a line containing "Did not write to Upservice". Do not call Figma or the product.
+
+Match `fixtures/demo-requirement/expected/` for shape.
 
 ## Card rules
 
@@ -40,4 +57,4 @@ Redact secrets. Prefer wording: field exists, value hidden.
 
 Match the shape of `fixtures/demo-catalog/expected/` (structure and frontmatter, not the demo sentences).
 
-Finally run `python tools/memory_schema.py memory/<product-id>` if that tree exists. If it prints errors, fix files before reporting success.
+After any successful write, run `py -3 tools/memory_schema.py memory/<product-id>` (or `python` if that is what the host uses) and fix errors before success.

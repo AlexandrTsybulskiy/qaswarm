@@ -9,6 +9,21 @@ from pathlib import Path
 REQUIRED_FIELDS = ("slug", "title", "status", "source", "fetched_at", "product")
 STATUSES = {"map", "deep", "stale"}
 SOURCES = {"public", "internal", "browser"}
+REQ_REQUIRED = (
+    "slug",
+    "title",
+    "product",
+    "task_id",
+    "status",
+    "source_task",
+    "source_design",
+    "fetched_at",
+    "figma_urls",
+    "entities",
+)
+REQ_STATUSES = {"draft", "ready", "stale"}
+SOURCE_TASK_VALUES = {"upservice", "none"}
+SOURCE_DESIGN_VALUES = {"figma", "none"}
 SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 SECRET_RE = re.compile(
     r"(?i)(?:(?:token|password|secret|api[_-]?key)\s*[:=]\s*"
@@ -111,6 +126,71 @@ def validate_card(path: Path) -> list[str]:
     return errors
 
 
+def validate_task_snapshot(path: Path) -> list[str]:
+    errors = validate_card(path)
+    meta, _body = parse_frontmatter(path.read_text(encoding="utf-8"))
+    task_id = meta.get("task_id", "")
+    if not task_id:
+        errors.append(f"{path}: missing task_id")
+    elif not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
+    slug = meta.get("slug", "")
+    if task_id and slug and slug != f"task-{task_id}":
+        errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
+    return errors
+
+
+def validate_requirement_card(path: Path) -> list[str]:
+    errors: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    meta, body = parse_frontmatter(text)
+    for field in REQ_REQUIRED:
+        if field not in meta or not meta[field]:
+            errors.append(f"{path}: missing {field}")
+    status = meta.get("status", "")
+    if status and status not in REQ_STATUSES:
+        errors.append(f"{path}: invalid status {status!r}")
+    if meta.get("source_task") and meta["source_task"] not in SOURCE_TASK_VALUES:
+        errors.append(f"{path}: invalid source_task")
+    if meta.get("source_design") and meta["source_design"] not in SOURCE_DESIGN_VALUES:
+        errors.append(f"{path}: invalid source_design")
+    slug = meta.get("slug", "")
+    if slug and not slug_ok(slug):
+        errors.append(f"{path}: invalid slug {slug!r}")
+    if slug and path.stem != slug:
+        errors.append(f"{path}: filename stem {path.stem!r} != slug {slug!r}")
+    task_id = meta.get("task_id", "")
+    if task_id and task_id != "none" and not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
+    if task_id and task_id != "none" and slug and slug != f"task-{task_id}":
+        errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
+    fetched = meta.get("fetched_at")
+    if fetched:
+        try:
+            stamp = datetime.fromisoformat(fetched)
+        except ValueError:
+            errors.append(f"{path}: fetched_at is not ISO-8601")
+        else:
+            if stamp.tzinfo is None or stamp.utcoffset() is None:
+                errors.append(f"{path}: fetched_at must include timezone offset")
+    if meta.get("source_design") == "figma" and meta.get("figma_urls", "none") == "none":
+        errors.append(f"{path}: source_design figma requires figma_urls")
+    if _looks_like_secret(text):
+        errors.append(f"{path}: secret-like value in card")
+    if not body.strip():
+        errors.append(f"{path}: empty body")
+    if not re.search(r"(?m)^## Gaps\s*$", body):
+        errors.append(f"{path}: missing ## Gaps heading")
+    if not any("Did not write to Upservice" in line for line in body.splitlines()):
+        errors.append(f"{path}: missing Did not write to Upservice notice")
+    if status == "ready":
+        testable = body.split("## Testable", 1)
+        chunk = testable[1].split("##", 1)[0] if len(testable) == 2 else ""
+        if not re.search(r"(?m)^\s*[-*+]\s+.*(?:→|->).*$", chunk):
+            errors.append(f"{path}: ready card needs Testable item with arrow")
+    return errors
+
+
 def validate_memory_tree(root: Path) -> list[str]:
     errors: list[str] = []
     index = root / "index.md"
@@ -129,6 +209,16 @@ def validate_memory_tree(root: Path) -> list[str]:
     incoming = root / "raw" / "_incoming"
     if incoming.is_dir() and any(incoming.iterdir()) and not incoming_complete(incoming):
         errors.append(f"{root}: incomplete incoming (no valid MANIFEST)")
+    tasks_dir = root / "tasks"
+    if tasks_dir.is_dir():
+        for card in tasks_dir.glob("task-*.md"):
+            errors.extend(validate_task_snapshot(card))
+    req_dir = root / "requirements"
+    if req_dir.is_dir():
+        for card in req_dir.glob("*.md"):
+            if card.name == "index.md":
+                continue
+            errors.extend(validate_requirement_card(card))
     return errors
 
 
