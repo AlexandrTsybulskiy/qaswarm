@@ -1,0 +1,12 @@
+id: my-product
+name: My Product
+public_api:
+  base_url: https://api.example.com
+  catalog_hint: /openapi.json
+  token_env: PUBLIC_API_TOKEN
+# internal_api:
+#   base_url: https://internal-api.example.com
+#   token_env: INTERNAL_API_TOKEN
+mcp:
+  browser: false
+ttl_hours: 168
