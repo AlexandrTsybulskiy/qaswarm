@@ -11,7 +11,8 @@ STATUSES = {"map", "deep", "stale"}
 SOURCES = {"public", "internal", "browser"}
 SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 SECRET_RE = re.compile(
-    r"(?i)(?:token|password|secret|api[_-]?key)\s*[:=]\s*(?:sk-|ghp_|xox[baprs]-|Bearer\s+)?\S+"
+    r"(?i)(?:(?:token|password|secret|api[_-]?key)\s*[:=]\s*"
+    r"(?:sk-|ghp_|xox[baprs]-|Bearer\s+)?|Authorization\s*:\s*Bearer\s+)\S+"
 )
 PLACEHOLDER_VALUES = {"скрыто", "redacted", "hidden", "[redacted]"}
 
@@ -56,12 +57,21 @@ def incoming_complete(incoming_dir: Path) -> bool:
             listed.append(stripped[2:].strip())
     if not listed:
         return False
-    return all((incoming_dir / name).is_file() for name in listed)
+    incoming_root = incoming_dir.resolve()
+    for name in listed:
+        relative = Path(name)
+        if relative.is_absolute():
+            return False
+        candidate = (incoming_root / relative).resolve()
+        if not candidate.is_relative_to(incoming_root) or not candidate.is_file():
+            return False
+    return True
 
 
 def _looks_like_secret(text: str) -> bool:
     for match in SECRET_RE.finditer(text):
         value = match.group(0).split(":", 1)[-1].split("=", 1)[-1].strip()
+        value = re.sub(r"(?i)^Bearer\s+", "", value)
         if value.lower() not in PLACEHOLDER_VALUES:
             return True
     return False
@@ -88,9 +98,12 @@ def validate_card(path: Path) -> list[str]:
     fetched = meta.get("fetched_at")
     if fetched:
         try:
-            datetime.fromisoformat(fetched)
+            stamp = datetime.fromisoformat(fetched)
         except ValueError:
             errors.append(f"{path}: fetched_at is not ISO-8601")
+        else:
+            if stamp.tzinfo is None or stamp.utcoffset() is None:
+                errors.append(f"{path}: fetched_at must include timezone offset")
     if _looks_like_secret(text):
         errors.append(f"{path}: secret-like value in card")
     if not body.strip():
@@ -105,7 +118,7 @@ def validate_memory_tree(root: Path) -> list[str]:
     gaps = root / "gaps.md"
     entities = root / "entities"
     for required in (index, catalog, gaps, entities):
-        if required.exists() is False:
+        if not required.exists():
             errors.append(f"{root}: missing {required.relative_to(root)}")
     if entities.is_dir():
         cards = list(entities.glob("*.md"))

@@ -7,7 +7,10 @@ You are the QA swarm Hunter. You fetch. You do not write canonical memory.
 
 ## When invoked
 
-Read the task: `product-id`, mode (`index-system` | `recall` | `refresh`), allowed channels, the single target for recall/refresh, what is already in memory.
+Read the task: `product-id`, mode (`index-system` | `recall` | `refresh`), allowed channels, refresh/recall targets, what is already in memory.
+
+- `recall`, or `refresh` with one slug: one targeted fetch.
+- `refresh` with multiple slugs or all map cards: one catalog map pass, like `index-system`. Do not start or request a second parallel Hunter.
 
 If `memory/<product-id>/raw/_incoming/` is not empty: stop. Report lock busy. Do not write.
 
@@ -19,7 +22,9 @@ Order: public API → internal API (only if `internal_api.base_url` is present) 
 
 `index-system`: public, then internal if public did not yield a catalog or resource summaries. Browser is forbidden. Put UI gaps into `errors[]` in `catalog.json` instead.
 
-`recall` / `refresh`: one target. Next channel only if the previous did not answer. Browser only if `mcp.browser` is true and APIs failed.
+`recall`, or `refresh` with one slug: one target. Next channel only if the previous did not answer. Browser only if `mcp.browser` is true and APIs failed.
+
+`refresh` with multiple slugs or all map cards: run a catalog map pass using the `index-system` channel rules (public, then internal if needed). Browser is forbidden on this catalog pass.
 
 ## Catalog discovery
 
