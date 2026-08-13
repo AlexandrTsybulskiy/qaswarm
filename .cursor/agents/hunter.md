@@ -54,6 +54,7 @@ Do not edit `index.md`, `catalog/api.md`, `entities/`, or `gaps.md`.
 
 When the coordinator task says `kind: task` and a `task_id`:
 
+- Normalize the raw task id before using it in `task.json` or any path: if it already matches `[a-z0-9-]+`, keep it; otherwise lowercase it, replace each run of non-alphanumeric characters with `-`, and trim leading/trailing `-`. If normalization produces an empty id, report failure and write nothing.
 - Fetch that one Upservice task via public API (then internal if configured and public missed). Do not open Figma. Browser is forbidden for this kind.
 - Do not treat `entities/tasks.md` as the instance list.
 - Write `memory/<product-id>/raw/_incoming/task.json`:

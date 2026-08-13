@@ -132,6 +132,8 @@ def validate_task_snapshot(path: Path) -> list[str]:
     task_id = meta.get("task_id", "")
     if not task_id:
         errors.append(f"{path}: missing task_id")
+    elif not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
     slug = meta.get("slug", "")
     if task_id and slug and slug != f"task-{task_id}":
         errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
@@ -158,6 +160,8 @@ def validate_requirement_card(path: Path) -> list[str]:
     if slug and path.stem != slug:
         errors.append(f"{path}: filename stem {path.stem!r} != slug {slug!r}")
     task_id = meta.get("task_id", "")
+    if task_id and task_id != "none" and not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
     if task_id and task_id != "none" and slug and slug != f"task-{task_id}":
         errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
     fetched = meta.get("fetched_at")
@@ -175,10 +179,14 @@ def validate_requirement_card(path: Path) -> list[str]:
         errors.append(f"{path}: secret-like value in card")
     if not body.strip():
         errors.append(f"{path}: empty body")
+    if not re.search(r"(?m)^## Gaps\s*$", body):
+        errors.append(f"{path}: missing ## Gaps heading")
+    if not any("Did not write to Upservice" in line for line in body.splitlines()):
+        errors.append(f"{path}: missing Did not write to Upservice notice")
     if status == "ready":
         testable = body.split("## Testable", 1)
         chunk = testable[1].split("##", 1)[0] if len(testable) == 2 else ""
-        if "→" not in chunk and "->" not in chunk:
+        if not re.search(r"(?m)^\s*[-*+]\s+.*(?:→|->).*$", chunk):
             errors.append(f"{path}: ready card needs Testable item with arrow")
     return errors
 
@@ -207,7 +215,9 @@ def validate_memory_tree(root: Path) -> list[str]:
             errors.extend(validate_task_snapshot(card))
     req_dir = root / "requirements"
     if req_dir.is_dir():
-        for card in req_dir.glob("task-*.md"):
+        for card in req_dir.glob("*.md"):
+            if card.name == "index.md":
+                continue
             errors.extend(validate_requirement_card(card))
     return errors
 
