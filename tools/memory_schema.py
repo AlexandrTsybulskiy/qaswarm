@@ -459,6 +459,40 @@ def validate_run_card(path: Path, testdoc_path: Path | None = None) -> list[str]
             errors.append(f"{path}: result ids must equal testdoc active ids")
         elif got_ids != expected_ids:
             errors.append(f"{path}: result order must be smoke then rest")
+        results_by_id = {item.case_id: item for item in results}
+        all_smoke_passed = all(
+            case_id in results_by_id and results_by_id[case_id].verdict == "pass"
+            for case_id in smoke
+        )
+        if all_smoke_passed:
+            if gate != "no":
+                errors.append(f"{path}: smoke_gate must be no when all smoke cases pass")
+            for case_id in rest:
+                item = results_by_id.get(case_id)
+                if item is not None and item.verdict == "skipped":
+                    errors.append(
+                        f"{path}: non-smoke {case_id} must not be smoke-gate skipped"
+                    )
+        else:
+            if gate != "yes":
+                errors.append(f"{path}: smoke_gate must be yes when a smoke case fails")
+            for case_id in rest:
+                item = results_by_id.get(case_id)
+                if item is not None and (
+                    item.verdict != "skipped" or item.reason != "smoke-gate"
+                ):
+                    errors.append(
+                        f"{path}: non-smoke {case_id} must be skipped with reason smoke-gate"
+                    )
+    else:
+        has_smoke_gate_skip = any(
+            item.verdict == "skipped" and item.reason == "smoke-gate"
+            for item in results
+        )
+        if has_smoke_gate_skip and gate != "yes":
+            errors.append(f"{path}: smoke_gate must be yes when results are smoke-gate skipped")
+        if gate == "no" and any(item.verdict == "skipped" for item in results):
+            errors.append(f"{path}: smoke_gate no must not have skipped results")
     return errors
 
 
@@ -505,6 +539,9 @@ def validate_memory_tree(root: Path) -> list[str]:
             testdoc_name = meta.get("testdoc", card.stem)
             testdoc_file = root / "testdocs" / f"{testdoc_name}.md"
             testdoc_path = testdoc_file if testdoc_file.is_file() else None
+            if testdoc_path is None:
+                relative_testdoc = testdoc_file.relative_to(root).as_posix()
+                errors.append(f"{card}: missing testdoc {relative_testdoc}")
             errors.extend(validate_run_card(card, testdoc_path))
     return errors
 
