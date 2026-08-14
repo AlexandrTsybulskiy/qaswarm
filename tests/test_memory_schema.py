@@ -407,3 +407,61 @@ def test_runs_index_not_validated_as_run(tmp_path: Path) -> None:
 
 def test_demo_run_incoming_complete() -> None:
     assert memory_schema.incoming_complete(RUN_INCOMING) is True
+
+
+def test_run_non_skipped_empty_observed_fails(tmp_path: Path) -> None:
+    for verdict, channel, reason_line in (
+        ("fail", "browser", "reason: expected not matched\n"),
+        ("blocked", "none", "reason: env unavailable\n"),
+        ("pass", "http", ""),
+    ):
+        card = tmp_path / f"task-{verdict}.md"
+        text = RUN_EXPECTED.read_text(encoding="utf-8").replace(
+            "### tc-1-1\nverdict: fail\nchannel: browser\n"
+            "observed: Settings screen missing Menu item\n"
+            "reason: expected not matched\n",
+            f"### tc-1-1\nverdict: {verdict}\nchannel: {channel}\n"
+            f"observed:\n{reason_line}",
+        )
+        if verdict == "pass":
+            text = text.replace("fail: 1", "fail: 0").replace("pass: 1", "pass: 2")
+        card.write_text(text, encoding="utf-8")
+        errors = memory_schema.validate_run_card(card)
+        assert any("missing observed" in e for e in errors), verdict
+
+
+def test_run_skipped_empty_observed_valid() -> None:
+    assert memory_schema.validate_run_card(RUN_EXPECTED) == []
+
+
+def test_parse_run_results_empty_block_keeps_pairing() -> None:
+    body = (
+        "## Results\n\n"
+        "### tc-1-1\n\n"
+        "### tc-1-2\n"
+        "verdict: pass\n"
+        "channel: http\n"
+        "observed: 200 OK\n"
+    )
+    results = memory_schema.parse_run_results(body)
+    assert len(results) == 2
+    assert results[0].case_id == "tc-1-1"
+    assert results[0].observed == ""
+    assert results[0].verdict == ""
+    assert results[1].case_id == "tc-1-2"
+    assert results[1].observed == "200 OK"
+    assert results[1].verdict == "pass"
+
+
+def test_run_empty_result_block_does_not_steal_next_case_fields(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    text = RUN_EXPECTED.read_text(encoding="utf-8").replace(
+        "### tc-1-1\nverdict: fail\nchannel: browser\n"
+        "observed: Settings screen missing Menu item\n"
+        "reason: expected not matched\n",
+        "### tc-1-1\n\n",
+    )
+    card.write_text(text, encoding="utf-8")
+    errors = memory_schema.validate_run_card(card)
+    assert any("tc-1-1" in e and "missing observed" in e for e in errors)
+    assert not any("tc-1-2" in e and "missing observed" in e for e in errors)

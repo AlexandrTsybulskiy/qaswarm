@@ -340,9 +340,9 @@ def parse_run_results(body: str) -> list[RunResult]:
     section = _md_section(body, "Results")
     headings = re.findall(r"(?m)^### (\S+)\s*$", section)
     chunks = re.split(r"(?m)^### .+\n", section)
-    blocks = [chunk for chunk in chunks[1:] if chunk.strip()]
+    blocks = chunks[1:]
     results: list[RunResult] = []
-    for heading, block in zip(headings, blocks, strict=False):
+    for heading, block in zip(headings, blocks, strict=True):
         fields: dict[str, str] = {}
         for line in block.splitlines():
             stripped = line.strip()
@@ -419,7 +419,11 @@ def validate_run_card(path: Path, testdoc_path: Path | None = None) -> list[str]
     gate = summary.get("smoke_gate", "")
     if gate not in {"yes", "no"}:
         errors.append(f"{path}: smoke_gate must be yes or no")
-    results = parse_run_results(body)
+    try:
+        results = parse_run_results(body)
+    except ValueError:
+        errors.append(f"{path}: Results heading count != block count")
+        results = []
     counts = {key: 0 for key in ("pass", "fail", "blocked", "skipped")}
     for item in results:
         if item.verdict not in RUN_VERDICTS:
@@ -428,6 +432,8 @@ def validate_run_card(path: Path, testdoc_path: Path | None = None) -> list[str]
             counts[item.verdict] += 1
         if item.channel not in RUN_CHANNELS:
             errors.append(f"{path}: invalid channel {item.channel!r}")
+        if item.verdict != "skipped" and not item.observed:
+            errors.append(f"{path}: case {item.case_id} missing observed")
         if item.verdict != "pass" and not item.reason:
             errors.append(f"{path}: case {item.case_id} missing reason")
         if item.channel == "none" and item.verdict not in {"blocked", "skipped"}:
