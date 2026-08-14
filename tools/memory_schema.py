@@ -24,6 +24,18 @@ REQ_REQUIRED = (
 REQ_STATUSES = {"draft", "ready", "stale"}
 SOURCE_TASK_VALUES = {"upservice", "none"}
 SOURCE_DESIGN_VALUES = {"figma", "none"}
+TD_REQUIRED = (
+    "slug",
+    "title",
+    "product",
+    "task_id",
+    "requirement",
+    "status",
+    "fetched_at",
+    "next_id",
+)
+TD_STATUSES = {"draft", "ready", "stale"}
+TD_CASE_STATUSES = {"active", "orphan"}
 SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 SECRET_RE = re.compile(
     r"(?i)(?:(?:token|password|secret|api[_-]?key)\s*[:=]\s*"
@@ -191,6 +203,96 @@ def validate_requirement_card(path: Path) -> list[str]:
     return errors
 
 
+def validate_testdoc_suite(path: Path) -> list[str]:
+    import testdoc_merge
+
+    errors: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    meta, body = parse_frontmatter(text)
+    for field in TD_REQUIRED:
+        if field not in meta or not meta[field]:
+            errors.append(f"{path}: missing {field}")
+    status = meta.get("status", "")
+    if status and status not in TD_STATUSES:
+        errors.append(f"{path}: invalid status {status!r}")
+    slug = meta.get("slug", "")
+    if slug and not slug_ok(slug):
+        errors.append(f"{path}: invalid slug {slug!r}")
+    if slug and path.stem != slug:
+        errors.append(f"{path}: filename stem {path.stem!r} != slug {slug!r}")
+    task_id = meta.get("task_id", "")
+    if task_id and task_id != "none" and not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
+    if task_id and task_id != "none" and slug and slug != f"task-{task_id}":
+        errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
+    requirement = meta.get("requirement", "")
+    if requirement and not slug_ok(requirement):
+        errors.append(f"{path}: invalid requirement {requirement!r}")
+    fetched = meta.get("fetched_at")
+    if fetched:
+        try:
+            stamp = datetime.fromisoformat(fetched)
+        except ValueError:
+            errors.append(f"{path}: fetched_at is not ISO-8601")
+        else:
+            if stamp.tzinfo is None or stamp.utcoffset() is None:
+                errors.append(f"{path}: fetched_at must include timezone offset")
+    next_raw = meta.get("next_id", "")
+    next_id = 0
+    if next_raw:
+        if not re.fullmatch(r"[1-9][0-9]*", next_raw):
+            errors.append(f"{path}: next_id must be an integer >= 1")
+        else:
+            next_id = int(next_raw)
+    if _looks_like_secret(text):
+        errors.append(f"{path}: secret-like value in card")
+    if not body.strip():
+        errors.append(f"{path}: empty body")
+    for heading in ("## Cases", "## Checklist", "## Gaps"):
+        if not re.search(rf"(?m)^{re.escape(heading)}\s*$", body):
+            errors.append(f"{path}: missing {heading} heading")
+    if not any(
+        "Did not write to Upservice" in line and "Testmo" in line
+        for line in body.splitlines()
+    ):
+        errors.append(f"{path}: missing Did not write to Upservice or Testmo notice")
+    cases = testdoc_merge.parse_canonical_cases(body)
+    prefix = testdoc_merge.case_id_prefix(task_id or "none", slug)
+    active_ids: list[str] = []
+    max_n = 0
+    for case in cases:
+        if not case.case_id or not case.case_id.startswith(f"tc-{prefix}-"):
+            errors.append(f"{path}: invalid case id {case.case_id!r}")
+        elif not re.fullmatch(rf"tc-{re.escape(prefix)}-[1-9][0-9]*", case.case_id):
+            errors.append(f"{path}: invalid case id {case.case_id!r}")
+        if case.status not in TD_CASE_STATUSES:
+            errors.append(f"{path}: invalid case status {case.status!r}")
+        if not case.action or not case.expected:
+            errors.append(f"{path}: case {case.case_id} missing action or expected")
+        if case.case_id:
+            _, _, last = case.case_id.rpartition("-")
+            if last.isdigit():
+                max_n = max(max_n, int(last))
+        if case.status == "active" and case.case_id:
+            active_ids.append(case.case_id)
+    if status == "ready" and not active_ids:
+        errors.append(f"{path}: ready suite needs an active case")
+    checklist: list[str] = []
+    chunk = body.split("## Checklist", 1)
+    check_body = chunk[1].split("##", 1)[0] if len(chunk) == 2 else ""
+    for line in check_body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- "):
+            checklist.append(stripped[2:].strip())
+    if checklist != active_ids:
+        errors.append(f"{path}: checklist must list active ids in case order")
+    if next_id and max_n and next_id != max_n + 1:
+        errors.append(f"{path}: next_id {next_id} must be {max_n + 1}")
+    if next_id and not cases and next_id != 1:
+        errors.append(f"{path}: empty suite next_id must be 1")
+    return errors
+
+
 def validate_memory_tree(root: Path) -> list[str]:
     errors: list[str] = []
     index = root / "index.md"
@@ -219,6 +321,12 @@ def validate_memory_tree(root: Path) -> list[str]:
             if card.name == "index.md":
                 continue
             errors.extend(validate_requirement_card(card))
+    testdocs_dir = root / "testdocs"
+    if testdocs_dir.is_dir():
+        for card in testdocs_dir.glob("*.md"):
+            if card.name == "index.md":
+                continue
+            errors.extend(validate_testdoc_suite(card))
     return errors
 
 

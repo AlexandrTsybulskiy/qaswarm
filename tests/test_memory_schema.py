@@ -241,3 +241,70 @@ def test_memory_tree_validates_spec_only_requirement_slug(tmp_path: Path) -> Non
 
 def test_demo_requirement_incoming_complete() -> None:
     assert memory_schema.incoming_complete(REQ_INCOMING) is True
+
+
+TD_INCOMING = ROOT / "fixtures" / "demo-testdoc" / "incoming"
+TD_EXISTING = ROOT / "fixtures" / "demo-testdoc" / "existing" / "testdocs" / "task-1.md"
+TD_EXPECTED = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.md"
+
+
+def test_demo_catalog_tree_still_valid_without_testdocs() -> None:
+    errors = memory_schema.validate_memory_tree(EXPECTED)
+    assert errors == []
+
+
+def test_testdoc_suite_valid() -> None:
+    assert memory_schema.validate_testdoc_suite(TD_EXPECTED) == []
+
+
+def test_testdoc_ready_without_active_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        "---\nslug: task-1\ntitle: Demo\nproduct: demo\ntask_id: 1\n"
+        "requirement: task-1\nstatus: ready\n"
+        "fetched_at: 2026-08-14T09:00:00+03:00\nnext_id: 1\n"
+        "---\n\n## Cases\n\n## Checklist\n\n## Gaps\n\n- none\n\n"
+        "Did not write to Upservice or Testmo.\n",
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_testdoc_suite(card)
+    assert any("active" in e for e in errors)
+
+
+def test_testdoc_orphan_not_in_checklist(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        TD_EXPECTED.read_text(encoding="utf-8").replace(
+            "- tc-1-1\n- tc-1-3\n- tc-1-4\n",
+            "- tc-1-1\n- tc-1-3\n- tc-1-4\n- tc-1-2\n",
+        ),
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_testdoc_suite(card)
+    assert any("checklist" in e.lower() for e in errors)
+
+
+def test_testdoc_merge_fixture_matches_expected() -> None:
+    import testdoc_merge
+
+    text = testdoc_merge.merge_files(TD_INCOMING / "testdocs.md", TD_EXISTING)
+    assert memory_schema.parse_frontmatter(text)[0]["next_id"] == "5"
+    got = testdoc_merge.parse_canonical_cases(memory_schema.parse_frontmatter(text)[1])
+    want = testdoc_merge.parse_canonical_cases(
+        memory_schema.parse_frontmatter(TD_EXPECTED.read_text(encoding="utf-8"))[1]
+    )
+    assert [(c.case_id, c.status, c.action, c.expected) for c in got] == [
+        (c.case_id, c.status, c.action, c.expected) for c in want
+    ]
+
+
+def test_testdocs_index_not_validated_as_suite(tmp_path: Path) -> None:
+    testdocs = tmp_path / "testdocs"
+    testdocs.mkdir()
+    (testdocs / "index.md").write_text("# Testdocs\n", encoding="utf-8")
+    errors = memory_schema.validate_memory_tree(tmp_path)
+    assert not any("testdocs/index.md" in e for e in errors)
+
+
+def test_demo_testdoc_incoming_complete() -> None:
+    assert memory_schema.incoming_complete(TD_INCOMING) is True
