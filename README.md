@@ -4,7 +4,7 @@ Cursor-native QA swarm kernel: map an external product into git memory and answe
 
 ## What this is
 
-Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `librarian`. Not a test runner. Not a ticket bot.
+Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + `librarian`. Live MCP checks write git runs. Not Playwright. Not a ticket bot.
 
 ## Setup
 
@@ -22,6 +22,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `librarian`. 
 - «Обнови user» → `refresh`
 - «Проанализируй задачу 1842» → skill `analyze-requirement`
 - «Сделай тест-доки для 1842» → skill `generate-testdocs`
+- «Проверь сюит 1842» → skill `verify-testdocs`
 
 ## Checks
 
@@ -42,9 +43,14 @@ python tools/memory_schema.py memory/<product-id>
 7. Testdocs from ready requirements: `testdocs/task-<id>.md` has one active case per Testable arrow, a checklist of those ids, schema `OK`; Upservice and Testmo are not called.
 8. Testdocs without a ready card: stop; `_incoming` stays empty; no testdocs file is created.
 9. Testdocs repeat: same `action`+`expected` keeps the id; new text gets `next_id`; unmatched old cases become `orphan` and drop off the checklist.
+10. Verify from testdocs: `runs/task-<id>.md` has one result per `active` case, schema `OK`; Upservice and Testmo are not called.
+11. Verify without testdocs: stop; `_incoming` stays empty; no runs file is created.
+12. Smoke gate and repeat: non-pass smoke skips the rest with `skipped` / `smoke-gate`; a second run overwrites the same `runs/<slug>.md`.
 
 Spec: `docs/superpowers/specs/2026-08-13-qa-swarm-kernel-memory-design.md`
 
 Requirements analysis spec: `docs/superpowers/specs/2026-08-13-qa-swarm-requirements-analysis-design.md`
 
 Test documentation spec: `docs/superpowers/specs/2026-08-14-qa-swarm-test-documentation-design.md`
+
+MCP verification spec: `docs/superpowers/specs/2026-08-14-qa-swarm-mcp-verification-design.md`

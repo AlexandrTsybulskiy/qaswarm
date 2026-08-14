@@ -115,3 +115,106 @@ def test_cli_writes_output(tmp_path: Path) -> None:
     assert code == 0
     text = output.read_text(encoding="utf-8")
     assert "### tc-checkout-spec-1" in text
+
+
+def test_merge_preserves_existing_tier() -> None:
+    existing = [
+        TestdocCase(
+            "A", "Open card", "dates visible", "active", "tc-1-1", "smoke"
+        ),
+    ]
+    incoming = [TestdocCase("A", "Open card", "dates visible")]
+    cases, _checklist, _next_id = testdoc_merge.merge_testdoc_cases(
+        existing, incoming, "1", 2
+    )
+    assert cases[0].case_id == "tc-1-1"
+    assert cases[0].tier == "smoke"
+
+
+def test_merge_incoming_tier_overrides() -> None:
+    existing = [
+        TestdocCase("A", "Open card", "dates visible", "active", "tc-1-1"),
+    ]
+    incoming = [
+        TestdocCase("A", "Open card", "dates visible", tier="smoke"),
+    ]
+    cases, _checklist, _next_id = testdoc_merge.merge_testdoc_cases(
+        existing, incoming, "1", 2
+    )
+    assert cases[0].tier == "smoke"
+
+
+def test_merge_new_case_has_no_tier() -> None:
+    incoming = [TestdocCase("B", "Click save", "dates persist")]
+    cases, _checklist, _next_id = testdoc_merge.merge_testdoc_cases(
+        [], incoming, "1", 1
+    )
+    assert cases[0].tier is None
+
+
+def test_merge_orphan_keeps_tier() -> None:
+    existing = [
+        TestdocCase("A", "Open card", "dates visible", "active", "tc-1-1", "smoke"),
+        TestdocCase("B", "Old", "gone", "active", "tc-1-2", "smoke"),
+    ]
+    incoming = [TestdocCase("A", "Open card", "dates visible")]
+    cases, checklist, _next_id = testdoc_merge.merge_testdoc_cases(
+        existing, incoming, "1", 3
+    )
+    by_id = {c.case_id: c for c in cases}
+    assert checklist == ["tc-1-1"]
+    assert by_id["tc-1-1"].tier == "smoke"
+    assert by_id["tc-1-2"].status == "orphan"
+    assert by_id["tc-1-2"].tier == "smoke"
+
+
+def test_render_omits_missing_tier() -> None:
+    text = testdoc_merge.render_testdoc(
+        {
+            "slug": "task-1",
+            "title": "T",
+            "product": "demo",
+            "task_id": "1",
+            "requirement": "task-1",
+            "status": "ready",
+            "fetched_at": "2026-08-14T09:00:00+03:00",
+            "next_id": "2",
+        },
+        [TestdocCase("A", "Open", "seen", "active", "tc-1-1")],
+        ["tc-1-1"],
+        [],
+    )
+    assert "tier:" not in text
+
+
+def test_parse_canonical_reads_tier() -> None:
+    body = (
+        "## Cases\n\n### tc-1-1\ntitle: T\naction: Open\nexpected: seen\n"
+        "status: active\ntier: smoke\n\n## Checklist\n\n- tc-1-1\n"
+    )
+    cases = testdoc_merge.parse_canonical_cases(body)
+    assert cases[0].tier == "smoke"
+
+
+def test_merge_files_preserves_tier(tmp_path: Path) -> None:
+    existing = tmp_path / "task-1.md"
+    existing.write_text(
+        "---\nslug: task-1\ntitle: T\nproduct: demo\ntask_id: 1\n"
+        "requirement: task-1\nstatus: ready\n"
+        "fetched_at: 2026-08-14T09:00:00+03:00\nnext_id: 2\n"
+        "---\n\n## Cases\n\n### tc-1-1\ntitle: T\naction: Open\n"
+        "expected: seen\nstatus: active\ntier: smoke\n\n"
+        "## Checklist\n\n- tc-1-1\n\n## Gaps\n\n- none\n\n"
+        "Did not write to Upservice or Testmo.\n",
+        encoding="utf-8",
+    )
+    incoming = tmp_path / "testdocs.md"
+    incoming.write_text(
+        "---\nslug: task-1\ntitle: T\nproduct: demo\ntask_id: 1\n"
+        "requirement: task-1\nfetched_at: 2026-08-14T10:00:00+03:00\n"
+        "---\n\n## Cases\n\n### case\ntitle: T\naction: Open\n"
+        "expected: seen\n\n## Gaps\n\n- none\n",
+        encoding="utf-8",
+    )
+    text = testdoc_merge.merge_files(incoming, existing)
+    assert "tier: smoke" in text
