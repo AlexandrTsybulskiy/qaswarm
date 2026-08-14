@@ -18,6 +18,14 @@ class TestdocCase:
     expected: str
     status: str = "active"
     case_id: str | None = None
+    tier: str | None = None
+
+
+def _normalize_tier(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    value = raw.strip()
+    return value or None
 
 
 def match_key(action: str, expected: str) -> str:
@@ -65,6 +73,7 @@ def parse_incoming_body(body: str) -> tuple[list[TestdocCase], list[str]]:
                 title=fields.get("title", ""),
                 action=fields.get("action", ""),
                 expected=fields.get("expected", ""),
+                tier=_normalize_tier(fields.get("tier")),
             )
         )
     gaps: list[str] = []
@@ -89,6 +98,7 @@ def parse_canonical_cases(body: str) -> list[TestdocCase]:
                 expected=fields.get("expected", ""),
                 status=fields.get("status", "active"),
                 case_id=heading,
+                tier=_normalize_tier(fields.get("tier")),
             )
         )
     return cases
@@ -129,6 +139,7 @@ def merge_testdoc_cases(
                     expected=item.expected.strip(),
                     status="active",
                     case_id=prior.case_id,
+                    tier=_normalize_tier(item.tier) or prior.tier,
                 )
             )
         else:
@@ -139,6 +150,7 @@ def merge_testdoc_cases(
                     expected=item.expected.strip(),
                     status="active",
                     case_id=format_case_id(prefix, cursor),
+                    tier=_normalize_tier(item.tier),
                 )
             )
             cursor += 1
@@ -149,6 +161,7 @@ def merge_testdoc_cases(
             expected=prior.expected,
             status="orphan",
             case_id=prior.case_id,
+            tier=prior.tier,
         )
         for index, prior in enumerate(existing)
         if index not in claimed
@@ -186,9 +199,11 @@ def render_testdoc(
                 f"action: {case.action}",
                 f"expected: {case.expected}",
                 f"status: {case.status}",
-                "",
             ]
         )
+        if case.tier:
+            lines.append(f"tier: {case.tier}")
+        lines.append("")
     lines.extend(["## Checklist", ""])
     for case_id in checklist:
         lines.append(f"- {case_id}")

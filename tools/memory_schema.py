@@ -267,6 +267,8 @@ def validate_testdoc_suite(path: Path) -> list[str]:
             errors.append(f"{path}: invalid case id {case.case_id!r}")
         if case.status not in TD_CASE_STATUSES:
             errors.append(f"{path}: invalid case status {case.status!r}")
+        if case.tier not in (None, "smoke"):
+            errors.append(f"{path}: invalid case tier {case.tier!r}")
         if not case.action or not case.expected:
             errors.append(f"{path}: case {case.case_id} missing action or expected")
         if case.case_id:

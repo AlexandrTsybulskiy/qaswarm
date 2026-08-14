@@ -308,3 +308,28 @@ def test_testdocs_index_not_validated_as_suite(tmp_path: Path) -> None:
 
 def test_demo_testdoc_incoming_complete() -> None:
     assert memory_schema.incoming_complete(TD_INCOMING) is True
+
+
+def test_testdoc_invalid_tier_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        TD_EXPECTED.read_text(encoding="utf-8").replace(
+            "status: active\n\n### tc-1-3",
+            "status: active\ntier: full\n\n### tc-1-3",
+        ),
+        encoding="utf-8",
+    )
+    errors = memory_schema.validate_testdoc_suite(card)
+    assert any("tier" in e for e in errors)
+
+
+def test_testdoc_smoke_tier_ok(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        TD_EXPECTED.read_text(encoding="utf-8").replace(
+            "status: active\n\n### tc-1-3",
+            "status: active\ntier: smoke\n\n### tc-1-3",
+        ),
+        encoding="utf-8",
+    )
+    assert memory_schema.validate_testdoc_suite(card) == []
