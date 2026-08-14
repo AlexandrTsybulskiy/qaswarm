@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -36,6 +37,20 @@ TD_REQUIRED = (
 )
 TD_STATUSES = {"draft", "ready", "stale"}
 TD_CASE_STATUSES = {"active", "orphan"}
+RUN_REQUIRED = (
+    "slug",
+    "title",
+    "product",
+    "task_id",
+    "testdoc",
+    "status",
+    "fetched_at",
+    "source",
+)
+RUN_STATUSES = {"ready"}
+RUN_SOURCES = {"browser", "public", "internal", "mixed", "none"}
+RUN_VERDICTS = {"pass", "fail", "blocked", "skipped"}
+RUN_CHANNELS = {"browser", "http", "none"}
 SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 SECRET_RE = re.compile(
     r"(?i)(?:(?:token|password|secret|api[_-]?key)\s*[:=]\s*"
@@ -295,6 +310,152 @@ def validate_testdoc_suite(path: Path) -> list[str]:
     return errors
 
 
+@dataclass
+class RunResult:
+    case_id: str
+    verdict: str
+    channel: str
+    observed: str
+    reason: str | None = None
+
+
+def _md_section(body: str, heading: str) -> str:
+    pattern = re.compile(rf"(?ms)^## {re.escape(heading)}\s*\n(.*?)(?=^## |\Z)")
+    match = pattern.search(body)
+    return match.group(1) if match else ""
+
+
+def parse_run_summary(body: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for line in _md_section(body, "Summary").splitlines():
+        stripped = line.strip()
+        if not stripped or ":" not in stripped:
+            continue
+        key, raw = stripped.split(":", 1)
+        fields[key.strip()] = raw.strip()
+    return fields
+
+
+def parse_run_results(body: str) -> list[RunResult]:
+    section = _md_section(body, "Results")
+    headings = re.findall(r"(?m)^### (\S+)\s*$", section)
+    chunks = re.split(r"(?m)^### .+\n", section)
+    blocks = [chunk for chunk in chunks[1:] if chunk.strip()]
+    results: list[RunResult] = []
+    for heading, block in zip(headings, blocks, strict=False):
+        fields: dict[str, str] = {}
+        for line in block.splitlines():
+            stripped = line.strip()
+            if not stripped or ":" not in stripped:
+                continue
+            key, raw = stripped.split(":", 1)
+            fields[key.strip()] = raw.strip()
+        reason = fields.get("reason")
+        results.append(
+            RunResult(
+                case_id=heading,
+                verdict=fields.get("verdict", ""),
+                channel=fields.get("channel", ""),
+                observed=fields.get("observed", ""),
+                reason=reason if reason else None,
+            )
+        )
+    return results
+
+
+def validate_run_card(path: Path, testdoc_path: Path | None = None) -> list[str]:
+    errors: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    meta, body = parse_frontmatter(text)
+    for field in RUN_REQUIRED:
+        if field not in meta or not meta[field]:
+            errors.append(f"{path}: missing {field}")
+    status = meta.get("status", "")
+    if status and status not in RUN_STATUSES:
+        errors.append(f"{path}: invalid status {status!r}")
+    source = meta.get("source", "")
+    if source and source not in RUN_SOURCES:
+        errors.append(f"{path}: invalid source {source!r}")
+    slug = meta.get("slug", "")
+    if slug and not slug_ok(slug):
+        errors.append(f"{path}: invalid slug {slug!r}")
+    if slug and path.stem != slug:
+        errors.append(f"{path}: filename stem {path.stem!r} != slug {slug!r}")
+    testdoc = meta.get("testdoc", "")
+    if testdoc and not slug_ok(testdoc):
+        errors.append(f"{path}: invalid testdoc {testdoc!r}")
+    if testdoc and slug and testdoc != slug:
+        errors.append(f"{path}: testdoc {testdoc!r} must match slug {slug!r}")
+    task_id = meta.get("task_id", "")
+    if task_id and task_id != "none" and not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
+    if task_id and task_id != "none" and slug and slug != f"task-{task_id}":
+        errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
+    fetched = meta.get("fetched_at")
+    if fetched:
+        try:
+            stamp = datetime.fromisoformat(fetched)
+        except ValueError:
+            errors.append(f"{path}: fetched_at is not ISO-8601")
+        else:
+            if stamp.tzinfo is None or stamp.utcoffset() is None:
+                errors.append(f"{path}: fetched_at must include timezone offset")
+    if _looks_like_secret(text):
+        errors.append(f"{path}: secret-like value in card")
+    if not body.strip():
+        errors.append(f"{path}: empty body")
+    for heading in ("## Summary", "## Results", "## Gaps"):
+        if not re.search(rf"(?m)^{re.escape(heading)}\s*$", body):
+            errors.append(f"{path}: missing {heading} heading")
+    if not any(
+        "Did not write to Upservice" in line and "Testmo" in line
+        for line in body.splitlines()
+    ):
+        errors.append(f"{path}: missing Did not write to Upservice or Testmo notice")
+    summary = parse_run_summary(body)
+    for key in ("pass", "fail", "blocked", "skipped"):
+        if key not in summary or not re.fullmatch(r"[0-9]+", summary[key]):
+            errors.append(f"{path}: Summary missing integer {key}")
+    gate = summary.get("smoke_gate", "")
+    if gate not in {"yes", "no"}:
+        errors.append(f"{path}: smoke_gate must be yes or no")
+    results = parse_run_results(body)
+    counts = {key: 0 for key in ("pass", "fail", "blocked", "skipped")}
+    for item in results:
+        if item.verdict not in RUN_VERDICTS:
+            errors.append(f"{path}: invalid verdict {item.verdict!r}")
+        elif item.verdict in counts:
+            counts[item.verdict] += 1
+        if item.channel not in RUN_CHANNELS:
+            errors.append(f"{path}: invalid channel {item.channel!r}")
+        if item.verdict != "pass" and not item.reason:
+            errors.append(f"{path}: case {item.case_id} missing reason")
+        if item.channel == "none" and item.verdict not in {"blocked", "skipped"}:
+            errors.append(f"{path}: channel none only with blocked or skipped")
+        if item.verdict == "skipped" and item.reason != "smoke-gate":
+            errors.append(f"{path}: skipped {item.case_id} reason must be smoke-gate")
+    for key, value in counts.items():
+        raw = summary.get(key)
+        if raw and raw.isdigit() and int(raw) != value:
+            errors.append(f"{path}: Summary {key} {raw} != {value}")
+    if testdoc_path is not None and testdoc_path.is_file():
+        import testdoc_merge
+
+        cases = testdoc_merge.parse_canonical_cases(
+            parse_frontmatter(testdoc_path.read_text(encoding="utf-8"))[1]
+        )
+        active = [c for c in cases if c.status == "active" and c.case_id]
+        smoke = [c.case_id for c in active if c.tier == "smoke" and c.case_id]
+        rest = [c.case_id for c in active if c.tier != "smoke" and c.case_id]
+        expected_ids = smoke + rest
+        got_ids = [item.case_id for item in results]
+        if set(got_ids) != set(expected_ids):
+            errors.append(f"{path}: result ids must equal testdoc active ids")
+        elif got_ids != expected_ids:
+            errors.append(f"{path}: result order must be smoke then rest")
+    return errors
+
+
 def validate_memory_tree(root: Path) -> list[str]:
     errors: list[str] = []
     index = root / "index.md"
@@ -329,6 +490,16 @@ def validate_memory_tree(root: Path) -> list[str]:
             if card.name == "index.md":
                 continue
             errors.extend(validate_testdoc_suite(card))
+    runs_dir = root / "runs"
+    if runs_dir.is_dir():
+        for card in runs_dir.glob("*.md"):
+            if card.name == "index.md":
+                continue
+            meta, _body = parse_frontmatter(card.read_text(encoding="utf-8"))
+            testdoc_name = meta.get("testdoc", card.stem)
+            testdoc_file = root / "testdocs" / f"{testdoc_name}.md"
+            testdoc_path = testdoc_file if testdoc_file.is_file() else None
+            errors.extend(validate_run_card(card, testdoc_path))
     return errors
 
 

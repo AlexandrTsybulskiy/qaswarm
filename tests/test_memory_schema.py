@@ -333,3 +333,77 @@ def test_testdoc_smoke_tier_ok(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert memory_schema.validate_testdoc_suite(card) == []
+
+
+RUN_INCOMING = ROOT / "fixtures" / "demo-run" / "incoming"
+RUN_EXPECTED = ROOT / "fixtures" / "demo-run" / "expected" / "runs" / "task-1.md"
+RUN_TESTDOC = ROOT / "fixtures" / "demo-run" / "testdocs" / "task-1.md"
+
+
+def test_demo_catalog_tree_still_valid_without_runs() -> None:
+    errors = memory_schema.validate_memory_tree(EXPECTED)
+    assert errors == []
+
+
+def test_run_card_valid() -> None:
+    assert memory_schema.validate_run_card(RUN_EXPECTED) == []
+
+
+def test_run_card_matches_testdoc_active() -> None:
+    assert memory_schema.validate_run_card(RUN_EXPECTED, RUN_TESTDOC) == []
+
+
+def test_run_missing_reason_on_fail_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    text = RUN_EXPECTED.read_text(encoding="utf-8").replace(
+        "observed: Settings screen missing Menu item\nreason: expected not matched\n",
+        "observed: Settings screen missing Menu item\n",
+    )
+    card.write_text(text, encoding="utf-8")
+    errors = memory_schema.validate_run_card(card)
+    assert any("reason" in e for e in errors)
+
+
+def test_run_channel_none_with_pass_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    text = RUN_EXPECTED.read_text(encoding="utf-8")
+    text = text.replace("verdict: pass\nchannel: http", "verdict: pass\nchannel: none")
+    text = text.replace("pass: 1\nfail: 1", "pass: 1\nfail: 1")
+    card.write_text(text, encoding="utf-8")
+    errors = memory_schema.validate_run_card(card)
+    assert any("channel" in e for e in errors)
+
+
+def test_run_summary_count_mismatch_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    text = RUN_EXPECTED.read_text(encoding="utf-8").replace("skipped: 2", "skipped: 0")
+    card.write_text(text, encoding="utf-8")
+    errors = memory_schema.validate_run_card(card)
+    assert any("skipped" in e for e in errors)
+
+
+def test_run_extra_id_fails_when_testdoc_present(tmp_path: Path) -> None:
+    testdoc = tmp_path / "suite.md"
+    testdoc.write_text(RUN_TESTDOC.read_text(encoding="utf-8"), encoding="utf-8")
+    card = tmp_path / "task-1.md"
+    text = RUN_EXPECTED.read_text(encoding="utf-8").replace(
+        "### tc-1-4\nverdict: skipped\nchannel: none\nobserved:\nreason: smoke-gate\n",
+        "### tc-1-4\nverdict: skipped\nchannel: none\nobserved:\nreason: smoke-gate\n\n"
+        "### tc-1-5\nverdict: skipped\nchannel: none\nobserved:\nreason: smoke-gate\n",
+    )
+    text = text.replace("skipped: 2", "skipped: 3")
+    card.write_text(text, encoding="utf-8")
+    errors = memory_schema.validate_run_card(card, testdoc)
+    assert any("active" in e or "id" in e for e in errors)
+
+
+def test_runs_index_not_validated_as_run(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    runs.mkdir()
+    (runs / "index.md").write_text("# Runs\n", encoding="utf-8")
+    errors = memory_schema.validate_memory_tree(tmp_path)
+    assert not any("runs/index.md" in e for e in errors)
+
+
+def test_demo_run_incoming_complete() -> None:
+    assert memory_schema.incoming_complete(RUN_INCOMING) is True
