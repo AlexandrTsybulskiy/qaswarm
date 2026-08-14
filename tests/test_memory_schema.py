@@ -275,8 +275,8 @@ def test_testdoc_orphan_not_in_checklist(tmp_path: Path) -> None:
     card = tmp_path / "task-1.md"
     card.write_text(
         TD_EXPECTED.read_text(encoding="utf-8").replace(
-            "- tc-1-1\n- tc-1-3\n",
-            "- tc-1-1\n- tc-1-3\n- tc-1-2\n",
+            "- tc-1-1\n- tc-1-3\n- tc-1-4\n",
+            "- tc-1-1\n- tc-1-3\n- tc-1-4\n- tc-1-2\n",
         ),
         encoding="utf-8",
     )

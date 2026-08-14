@@ -26,7 +26,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `librarian`. 
 ## Checks
 
 ```powershell
-python -m pytest tests/test_memory_schema.py -v
+python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py -v
 python tools/memory_schema.py fixtures/demo-catalog/expected
 python tools/memory_schema.py memory/<product-id>
 ```

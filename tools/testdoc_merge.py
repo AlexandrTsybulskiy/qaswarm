@@ -11,6 +11,8 @@ from memory_schema import parse_frontmatter
 
 @dataclass
 class TestdocCase:
+    __test__ = False
+
     title: str
     action: str
     expected: str
