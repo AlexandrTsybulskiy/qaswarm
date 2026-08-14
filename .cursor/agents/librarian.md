@@ -20,6 +20,8 @@ You are the QA swarm Librarian. You are the only writer of canonical memory.
 - `memory/<product-id>/tasks/task-<id>.md`
 - `memory/<product-id>/requirements/index.md`
 - `memory/<product-id>/requirements/<slug>.md`
+- `memory/<product-id>/testdocs/index.md`
+- `memory/<product-id>/testdocs/<slug>.md`
 
 Any task id used in a path must match `[a-z0-9-]+`. If a raw id is not already valid, lowercase it, replace each run of non-alphanumeric characters with `-`, and trim leading/trailing `-`. If normalization produces an empty id, write nothing and report failure.
 
@@ -40,6 +42,32 @@ If `task.json` has an empty title and a non-empty `errors` array, the task is mi
 If MANIFEST lists `requirement.md`: normalize any task id before deriving a `task-<id>` slug, write `requirements/<slug>.md`, and add a row in `requirements/index.md`. Spec-only cards may use another normalized slug. Dedup by slug (merge, never `task-1-2`). Do not invent Testable rows. `ready` only if at least one Testable list item contains an action→expected arrow. Always include a `## Gaps` heading and a line containing "Did not write to Upservice". Do not call Figma or the product.
 
 Match `fixtures/demo-requirement/expected/` for shape.
+
+## Testdoc incoming
+
+If MANIFEST lists `testdocs.md`: do not assign case ids yourself.
+
+Run (host CLI `py -3` or `python`):
+
+```
+py -3 tools/testdoc_merge.py --incoming memory/<product-id>/raw/_incoming/testdocs.md --existing memory/<product-id>/testdocs/<slug>.md --output memory/<product-id>/testdocs/<slug>.md
+```
+
+If the existing suite file does not exist, omit `--existing`. `<slug>` is the incoming `slug` (same as the requirement slug). Dedup by slug (merge, never `task-1-2`).
+
+Then add or update a row in `testdocs/index.md`:
+
+```markdown
+# Testdocs
+
+| Slug | Task | Status | Active | Card |
+|------|------|--------|--------|------|
+| task-1 | 1 | ready | 2 | [task-1.md](task-1.md) |
+```
+
+`Task` is `task_id` or empty when `none`. `Active` is the number of `status: active` cases. Do not invent cases or rewrite action/expected. Do not call Figma, Upservice, or Testmo.
+
+Match `fixtures/demo-testdoc/expected/` for shape (ids and sections, not demo titles).
 
 ## Card rules
 

@@ -18,4 +18,6 @@ Coordinator and Hunter must not edit these files. Only the `librarian` subagent 
 
 Task snapshots live in `memory/<product-id>/tasks/task-<id>.md` (entity frontmatter plus `task_id`). Requirement cards live in `memory/<product-id>/requirements/task-<id>.md` with requirement fields from the spec. Only librarian writes both.
 
+Testdoc suites live in `memory/<product-id>/testdocs/<slug>.md` with testdoc fields from the spec. Only librarian writes them (via `tools/testdoc_merge.py`). `testdocs/index.md` is not a card.
+
 Validate with: `python tools/memory_schema.py memory/<product-id>`
