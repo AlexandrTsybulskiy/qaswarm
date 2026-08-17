@@ -79,3 +79,41 @@ def test_cli_missing_suite_does_not_write(tmp_path: Path) -> None:
     )
     assert code == 1
     assert not output.exists()
+
+
+TD_INDEX = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "index.md"
+
+DRAFT_SUITE = """\
+---
+slug: draft-1
+title: Draft suite
+status: draft
+---
+
+## Cases
+
+### tc-1-1
+title: Active case
+action: Do thing
+expected: Works
+status: active
+
+## Checklist
+
+- tc-1-1
+"""
+
+
+def test_export_draft_suite_header_only(tmp_path: Path) -> None:
+    draft = tmp_path / "draft.md"
+    draft.write_text(DRAFT_SUITE, encoding="utf-8")
+    assert testdoc_csv.export_suite(draft) == "Name,Folder,Steps,Expected,Id\n"
+
+
+def test_cli_index_md_does_not_write(tmp_path: Path) -> None:
+    output = tmp_path / "out.csv"
+    code = testdoc_csv.main(
+        ["--suite", str(TD_INDEX), "--output", str(output)]
+    )
+    assert code == 1
+    assert not output.exists()

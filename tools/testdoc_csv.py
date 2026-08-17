@@ -66,11 +66,15 @@ def render_csv(rows: list[dict[str, str]]) -> str:
 
 
 def export_suite(suite_path: Path) -> str:
+    if suite_path.name == "index.md":
+        raise ValueError(f"{suite_path}: not a testdoc suite")
     text = suite_path.read_text(encoding="utf-8")
     meta, body = parse_frontmatter(text)
-    title = meta.get("title", "")
     if not meta:
         raise ValueError(f"{suite_path}: not a testdoc suite")
+    if meta.get("status") == "draft":
+        return render_csv([])
+    title = meta.get("title", "")
     cases = testdoc_merge.parse_canonical_cases(body)
     return render_csv(csv_rows(title, cases, checklist_ids(body)))
 
