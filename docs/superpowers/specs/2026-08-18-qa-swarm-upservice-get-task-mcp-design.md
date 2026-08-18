@@ -97,7 +97,7 @@ docs/examples/product-config.yaml # без новых полей
 - URL: `{base_url без завершающего /}/v1/tasks/{id}`
 - Метод: GET
 - Таймаут одного GET: 30 с (истечение → `status_code: 0`, без ретрая)
-- Заголовок `Authorization`: если значение токена уже содержит пробел (например `Bearer …`) — как есть; иначе `Bearer {token}`
+- Заголовок `Authorization`: голый токен без схемы `Bearer`. Если в значении уже есть префикс `Bearer `, он снимается.
 
 Успех: `{status_code: 200, body: <parsed JSON>}`. Если тело не JSON — `body` строка, парсер не выдумывает объект.
 
