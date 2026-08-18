@@ -37,7 +37,28 @@ Use `public_api.catalog_hint` relative to `public_api.base_url`. If `unknown`, t
 
 Do not invent resources. Map only paths the catalog actually returned. Do not dump all records; this is a map: path, methods, title, short summary.
 
-Call APIs with Cursor HTTP/MCP tools. There is no HTTP client in this repo. Use `token_env` names; never write token values into files.
+Call APIs with Cursor HTTP/MCP tools. The only HTTP client in this repo is GET inside `tools/upservice_mcp/` for the public GET MCP tools. Use `token_env` names; never write token values into files.
+
+For public GET of these paths, call the named MCP tool. Do not construct the URL:
+
+- GET `/v1/tasks/{id}` → `get_task`
+- GET `/v1/projects/{id}` → `get_project`
+- GET `/v1/sprints/{id}` → `get_sprint`
+- GET `/v1/directories/{id}` → `get_directory`
+- GET `/v1/directory-records/{id}` → `get_directory_record`
+- GET `/v1/tasks` → `list_tasks`
+- GET `/v1/projects` → `list_projects`
+- GET `/v1/sprints` → `list_sprints`
+- GET `/v1/employees` → `list_employees`
+- GET `/v1/tags` → `list_tags`
+- GET `/v1/directories` → `list_directories`
+- GET `/v1/directory-records` → `list_directory_records`
+
+If that tool is not in the available MCP tool list: do not guess the public path. Report that Cursor must copy `docs/examples/mcp.json` into `.cursor/mcp.json` and reload MCP. Do not stop `index-system` catalog discovery via `catalog_hint` / OpenAPI.
+
+If the tool returns `status_code` 429: call it again with the same arguments, up to two more times (three tool calls max). 429 is not "missing".
+
+There is no `get_employee` or `get_tag`. There are no MCP tools for channels, files, or external-channels.
 
 ## Output
 
@@ -55,9 +76,12 @@ Do not edit `index.md`, `catalog/api.md`, `entities/`, or `gaps.md`.
 When the coordinator task says `kind: task` and a `task_id`:
 
 - Normalize the raw task id before using it in `task.json` or any path: if it already matches `[a-z0-9-]+`, keep it; otherwise lowercase it, replace each run of non-alphanumeric characters with `-`, and trim leading/trailing `-`. If normalization produces an empty id, report failure and write nothing.
-- Fetch that one Upservice task via public API (then internal if configured and public missed). Do not open Figma. Browser is forbidden for this kind.
+- Public fetch: call MCP tool `get_task` with that `task_id`. Do not construct `GET /v1/tasks/{id}` yourself. Do not open Figma. Browser is forbidden for this kind.
+- If `get_task` is not in the available MCP tool list: stop. Write nothing. Report that Cursor must copy `docs/examples/mcp.json` into `.cursor/mcp.json` and reload MCP. Do not guess the public path.
+- If `get_task` returns `status_code` 429: call `get_task` again with the same id, up to two more times (three tool calls max). 429 is not "task missing".
+- If public still did not return 200 JSON and `internal_api.base_url` is in `products/<product-id>/config.yaml`: one generic HTTP call to internal (not MCP). Success → `channel: internal`.
 - Do not treat `entities/tasks.md` as the instance list.
-- Write `memory/<product-id>/raw/_incoming/task.json`:
+- Write `memory/<product-id>/raw/_incoming/task.json` from the tool `body` (title, fields, figma URLs you find there). Shape:
 
 ```json
 {
@@ -73,5 +97,5 @@ When the coordinator task says `kind: task` and a `task_id`:
 ```
 
 - `MANIFEST.md` lists only `task.json`.
-- If the task is missing: `task.json` with empty title/fields and `errors[]`; still write MANIFEST. Do not invent the task.
+- If the task is missing or the tool returns 404/401/exhausted 429/`status_code` 0: `task.json` with empty title/fields and `errors[]` (code + short message, never the token value); still write MANIFEST. Do not invent the task.
 - Do not write `requirements/` or `tasks/` canonical files.

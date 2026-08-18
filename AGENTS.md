@@ -26,3 +26,7 @@ Writing tickets, Playwright/e2e, full API dumps, scheduled reindex, RAG, guessin
 `docs/superpowers/specs/2026-08-14-qa-swarm-mcp-verification-design.md`
 
 `docs/superpowers/specs/2026-08-17-qa-swarm-testmo-csv-export-design.md`
+
+`docs/superpowers/specs/2026-08-18-qa-swarm-upservice-get-task-mcp-design.md`
+
+`docs/superpowers/specs/2026-08-18-qa-swarm-upservice-entity-mcp-tools-design.md`

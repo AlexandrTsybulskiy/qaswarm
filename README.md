@@ -14,6 +14,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 4. Put API tokens in `products/<product-id>/.env` or Cursor MCP. Never commit them.
 5. Open this folder as the Cursor workspace.
 6. Connect Figma MCP in Cursor to analyze task design links.
+7. Copy `docs/examples/mcp.json` into `.cursor/mcp.json` (gitignored) so Hunter can call Upservice GET MCP tools (`get_task`, `get_project`, `list_employees`, …). Reload MCP in Cursor. Token stays in `products/upservice/.env`, not in mcp.json.
 
 ## Commands (natural language)
 
@@ -27,7 +28,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 ## Checks
 
 ```powershell
-python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py -v
+python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py tests/test_get_task_mcp.py tests/test_entity_mcp.py -v
 python tools/memory_schema.py fixtures/demo-catalog/expected
 python tools/memory_schema.py memory/<product-id>
 ```
@@ -56,3 +57,7 @@ Test documentation spec: `docs/superpowers/specs/2026-08-14-qa-swarm-test-docume
 MCP verification spec: `docs/superpowers/specs/2026-08-14-qa-swarm-mcp-verification-design.md`
 
 Testmo CSV export spec: `docs/superpowers/specs/2026-08-17-qa-swarm-testmo-csv-export-design.md`
+
+Upservice get_task MCP spec: `docs/superpowers/specs/2026-08-18-qa-swarm-upservice-get-task-mcp-design.md`
+
+Upservice entity GET/list MCP spec: `docs/superpowers/specs/2026-08-18-qa-swarm-upservice-entity-mcp-tools-design.md`

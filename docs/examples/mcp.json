@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "upservice": {
+      "command": "py",
+      "args": ["-3", "tools/upservice_mcp/server.py"]
+    }
+  }
+}
