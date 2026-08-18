@@ -1,26 +1,26 @@
 ---
 slug: task-1
-title: Show sprint dates
+title: Показать даты спринта
 product: demo
 task_id: 1
 requirement: task-1
 status: ready
-fetched_at: 2026-08-13T17:00:00+03:00
+fetched_at: 2026-08-14T09:00:00+03:00
 next_id: 3
 ---
 
 ## Cases
 
 ### tc-1-1
-title: Visible
-action: Open a sprint card
-expected: start and end dates are visible
+title: Видны
+action: Открыть карточку спринта
+expected: видны даты начала и окончания
 status: active
 
 ### tc-1-2
-title: Hidden
-action: Open a sprint without dates
-expected: date row is hidden
+title: Скрыты
+action: Открыть спринт без дат
+expected: строка дат скрыта
 status: active
 
 ## Checklist

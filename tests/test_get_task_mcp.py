@@ -44,12 +44,12 @@ def test_normalize_strips_junk() -> None:
     assert utc.normalize_task_id(" Task 12 ") == "task-12"
 
 
-def test_authorization_adds_bearer() -> None:
-    assert utc.authorization_header("abc") == "Bearer abc"
+def test_authorization_sends_raw_token() -> None:
+    assert utc.authorization_header("abc") == "abc"
 
 
-def test_authorization_keeps_existing_scheme() -> None:
-    assert utc.authorization_header("Bearer abc") == "Bearer abc"
+def test_authorization_strips_bearer_prefix() -> None:
+    assert utc.authorization_header("Bearer abc") == "abc"
 
 
 def test_get_task_200_raw_body_no_token_leak(tmp_path: Path) -> None:
@@ -68,7 +68,7 @@ def test_get_task_200_raw_body_no_token_leak(tmp_path: Path) -> None:
     assert TOKEN not in json.dumps(result)
     assert calls[0][0] == "https://public.upservice.io/v1/tasks/1"
     assert calls[0][2] == utc.GET_TIMEOUT
-    assert calls[0][1]["Authorization"] == f"Bearer {TOKEN}"
+    assert calls[0][1]["Authorization"] == TOKEN
     assert len(calls) == 1
 
 
@@ -138,7 +138,7 @@ def test_get_task_token_from_environ_not_dotenv(tmp_path: Path) -> None:
         environ={"UPSERVICE_PUBLIC_API_TOKEN": "from-env"},
         http_get=http_get,
     )
-    assert seen == ["Bearer from-env"]
+    assert seen == ["from-env"]
 
 
 def test_get_task_missing_config(tmp_path: Path) -> None:

@@ -30,9 +30,11 @@ def normalize_task_id(raw: str | int) -> str:
 
 
 def authorization_header(token: str) -> str:
-    if " " in token:
-        return token
-    return f"Bearer {token}"
+    value = token.strip()
+    prefix = "bearer "
+    if value.lower().startswith(prefix):
+        return value[len(prefix) :].strip()
+    return value
 
 
 def parse_product_yaml(text: str) -> dict[str, Any]:
