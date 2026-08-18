@@ -1,6 +1,6 @@
 ---
 slug: task-1
-title: Show sprint dates
+title: Показать даты спринта
 product: demo
 task_id: 1
 status: ready
@@ -11,12 +11,12 @@ figma_urls: https://www.figma.com/design/demo/sprint
 entities: sprints
 ---
 
-Add visible sprint date range on the sprint card.
+Добавить видимый диапазон дат на карточке спринта.
 
 ## Testable
 
-- Open a sprint card → start and end dates are visible
-- Open a sprint without dates → date row is hidden
+- Открыть карточку спринта → видны даты начала и окончания
+- Открыть спринт без дат → строка дат скрыта
 
 ## Gaps
 

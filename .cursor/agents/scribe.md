@@ -19,7 +19,8 @@ Do not read `testdocs/`. Do not assign `tc-…` ids.
 
 Read only `## Testable` on the requirement card. For each list item:
 
-- If the line contains `→` or `->`, split on the **first** arrow. Copy `action` (left) and `expected` (right) verbatim. Do not paraphrase. `title` is a short label, not a replacement for the steps.
+- If the line contains `→` or `->`, split on the **first** arrow. Copy `action` (left) and `expected` (right) verbatim. Do not paraphrase.
+- `title` is a short label in the **same language** as `action` and `expected`, not a replacement for the steps. Russian Testable → Russian titles. Match `fixtures/demo-testdoc/incoming/testdocs.md` (example: `Даты спринта видны`).
 - If there is no arrow: add the line to Gaps, not to Cases.
 - Do not turn the requirement `## Gaps` section into cases.
 - Do not add checks that are not in Testable.

@@ -1,4 +1,4 @@
 Name,Folder,Steps,Expected,Id
-Sprint dates visible,Show sprint dates,Open a sprint card,start and end dates are visible,tc-1-1
-Save persists dates,Show sprint dates,Click save,dates persist,tc-1-3
-Missing dates placeholder,Show sprint dates,Open a sprint without dates,placeholder shown,tc-1-4
+Даты спринта видны,Показать даты спринта,Открыть карточку спринта,видны даты начала и окончания,tc-1-1
+Сохранение сохраняет даты,Показать даты спринта,Нажать сохранить,даты сохраняются,tc-1-3
+Плейсхолдер без дат,Показать даты спринта,Открыть спринт без дат,показан плейсхолдер,tc-1-4

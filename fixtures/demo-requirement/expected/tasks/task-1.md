@@ -1,6 +1,6 @@
 ---
 slug: task-1
-title: Show sprint dates
+title: Показать даты спринта
 status: deep
 source: public
 fetched_at: 2026-08-13T17:00:00+03:00

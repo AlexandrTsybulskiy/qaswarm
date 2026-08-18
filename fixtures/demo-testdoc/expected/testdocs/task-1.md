@@ -1,6 +1,6 @@
 ---
 slug: task-1
-title: Show sprint dates
+title: Показать даты спринта
 product: demo
 task_id: 1
 requirement: task-1
@@ -12,27 +12,27 @@ next_id: 5
 ## Cases
 
 ### tc-1-1
-title: Sprint dates visible
-action: Open a sprint card
-expected: start and end dates are visible
+title: Даты спринта видны
+action: Открыть карточку спринта
+expected: видны даты начала и окончания
 status: active
 
 ### tc-1-3
-title: Save persists dates
-action: Click save
-expected: dates persist
+title: Сохранение сохраняет даты
+action: Нажать сохранить
+expected: даты сохраняются
 status: active
 
 ### tc-1-4
-title: Missing dates placeholder
-action: Open a sprint without dates
-expected: placeholder shown
+title: Плейсхолдер без дат
+action: Открыть спринт без дат
+expected: показан плейсхолдер
 status: active
 
 ### tc-1-2
-title: Hidden
-action: Open a sprint without dates
-expected: date row is hidden
+title: Скрыты
+action: Открыть спринт без дат
+expected: строка дат скрыта
 status: orphan
 
 ## Checklist
