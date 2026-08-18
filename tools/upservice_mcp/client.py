@@ -97,6 +97,30 @@ def _decode_body(text: str) -> Any:
         return text
 
 
+def _normalize_body(decoded: Any) -> dict[str, Any] | str:
+    if isinstance(decoded, dict):
+        return decoded
+    if isinstance(decoded, str):
+        return decoded
+    return json.dumps(decoded)
+
+
+def _redact_token_in_value(value: Any, token: str) -> Any:
+    if isinstance(value, dict):
+        return {key: _redact_token_in_value(item, token) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redact_token_in_value(item, token) for item in value]
+    if isinstance(value, str):
+        return value.replace(token, "[REDACTED]")
+    return value
+
+
+def _redact_token_in_body(body: dict[str, Any] | str, token: str) -> dict[str, Any] | str:
+    if isinstance(body, dict):
+        return _redact_token_in_value(body, token)
+    return body.replace(token, "[REDACTED]")
+
+
 def _error(status: int, message: str) -> dict[str, object]:
     return {"status_code": status, "body": {"error": message}}
 
@@ -148,5 +172,12 @@ def get_task(
     headers = {"Authorization": authorization_header(token), "Accept": "application/json"}
     status, text, _hdrs = getter(url, headers, GET_TIMEOUT)
     if status == 0:
-        return _error(0, text or "request failed")
-    return {"status_code": status, "body": _decode_body(text)}
+        result = _error(0, text or "request failed")
+    else:
+        result = {"status_code": status, "body": _normalize_body(_decode_body(text))}
+    body = result["body"]
+    if not isinstance(body, (dict, str)):
+        body = _normalize_body(body)
+    result = dict(result)
+    result["body"] = _redact_token_in_body(body, token)
+    return result
