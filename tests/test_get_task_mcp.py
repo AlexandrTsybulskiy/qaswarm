@@ -56,7 +56,9 @@ def test_get_task_200_raw_body_no_token_leak(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     calls: list[tuple[str, dict[str, str], float]] = []
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         calls.append((url, headers, timeout))
         return 200, json.dumps({"id": 1, "title": "Show sprint dates"}), {}
 
@@ -74,7 +76,9 @@ def test_get_task_404_single_get(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     calls: list[str] = []
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         calls.append(url)
         return 404, json.dumps({"detail": "not found"}), {}
 
@@ -87,7 +91,9 @@ def test_get_task_401_no_retry(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     calls: list[int] = []
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         calls.append(1)
         return 401, json.dumps({"detail": "unauthorized"}), {}
 
@@ -101,7 +107,9 @@ def test_get_task_missing_token_no_http(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env="")
     called = {"n": 0}
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         called["n"] += 1
         return 200, "{}", {}
 
@@ -118,7 +126,9 @@ def test_get_task_token_from_environ_not_dotenv(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env="UPSERVICE_PUBLIC_API_TOKEN=from-file\n")
     seen: list[str] = []
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         seen.append(headers["Authorization"])
         return 200, "{}", {}
 
@@ -134,7 +144,12 @@ def test_get_task_token_from_environ_not_dotenv(tmp_path: Path) -> None:
 def test_get_task_missing_config(tmp_path: Path) -> None:
     products = tmp_path / "products"
     products.mkdir()
-    result = utc.get_task("1", products_root=products, environ={}, http_get=lambda *_a: (200, "{}", {}))
+    result = utc.get_task(
+        "1",
+        products_root=products,
+        environ={},
+        http_get=lambda *_a: (200, "{}", {}),
+    )
     assert result["status_code"] == 0
     assert isinstance(result["body"], dict)
 
@@ -143,7 +158,9 @@ def test_get_task_rejects_slash_id(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     called = {"n": 0}
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         called["n"] += 1
         return 200, "{}", {}
 
@@ -157,7 +174,9 @@ def test_get_task_wrong_product_id(tmp_path: Path) -> None:
     products = _product_root(tmp_path, config=config, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     called = {"n": 0}
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         called["n"] += 1
         return 200, "{}", {}
 
@@ -169,7 +188,9 @@ def test_get_task_wrong_product_id(tmp_path: Path) -> None:
 def test_get_task_non_json_body_is_string(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         return 200, "not-json", {}
 
     result = utc.get_task("1", products_root=products, environ={}, http_get=http_get)
@@ -180,7 +201,9 @@ def test_get_task_non_json_body_is_string(tmp_path: Path) -> None:
 def test_get_task_redacts_token_from_response_body(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         return 200, json.dumps({"id": 1, "note": f"token was {TOKEN}"}), {}
 
     result = utc.get_task("1", products_root=products, environ={}, http_get=http_get)
@@ -195,7 +218,9 @@ def test_get_task_redacts_token_from_response_body(tmp_path: Path) -> None:
 def test_get_task_redacts_token_from_response_key(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         return 200, json.dumps({TOKEN: "value"}), {}
 
     result = utc.get_task("1", products_root=products, environ={}, http_get=http_get)
@@ -211,7 +236,9 @@ def test_get_task_json_array_body_is_string(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     payload = [{"id": 1}, {"id": 2}]
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         return 200, json.dumps(payload), {}
 
     result = utc.get_task("1", products_root=products, environ={}, http_get=http_get)
@@ -245,7 +272,9 @@ def test_429_then_200_retries_once(tmp_path: Path) -> None:
     calls = {"n": 0}
     sleeps: list[float] = []
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         calls["n"] += 1
         if calls["n"] == 1:
             return 429, json.dumps({"detail": "slow down"}), {}
@@ -269,7 +298,9 @@ def test_retry_after_header_used(tmp_path: Path) -> None:
     sleeps: list[float] = []
     calls = {"n": 0}
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         calls["n"] += 1
         if calls["n"] == 1:
             return 429, "{}", {"Retry-After": "2"}
@@ -290,7 +321,9 @@ def test_six_429_returns_429(tmp_path: Path) -> None:
     calls = {"n": 0}
     sleeps: list[float] = []
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         calls["n"] += 1
         return 429, json.dumps({"detail": "rate"}), {}
 
@@ -311,7 +344,9 @@ def test_404_still_single_get_after_retry_logic(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     calls = {"n": 0}
 
-    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
         calls["n"] += 1
         return 404, "{}", {}
 
@@ -369,3 +404,45 @@ def test_server_script_imports_without_tools_on_sys_path() -> None:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_public_get_rejects_query_in_path(tmp_path: Path) -> None:
+    called = {"n": 0}
+
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
+        called["n"] += 1
+        return 200, "{}", {}
+
+    result = utc.public_get(
+        "/v1/tasks/1?x=1",
+        products_root=tmp_path,
+        environ={},
+        http_get=http_get,
+    )
+    assert result["status_code"] == 0
+    body = result["body"]
+    assert isinstance(body, dict)
+    assert body.get("error") == "invalid path"
+    assert called["n"] == 0
+
+
+def test_public_get_rejects_dotdot(tmp_path: Path) -> None:
+    called = {"n": 0}
+
+    def http_get(
+        url: str, headers: dict[str, str], timeout: float
+    ) -> tuple[int, str, dict[str, str]]:
+        called["n"] += 1
+        return 200, "{}", {}
+
+    result = utc.public_get(
+        "/v1/../secret",
+        products_root=tmp_path,
+        environ={},
+        http_get=http_get,
+    )
+    assert result["status_code"] == 0
+    assert called["n"] == 0
+

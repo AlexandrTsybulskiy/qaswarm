@@ -37,7 +37,28 @@ Use `public_api.catalog_hint` relative to `public_api.base_url`. If `unknown`, t
 
 Do not invent resources. Map only paths the catalog actually returned. Do not dump all records; this is a map: path, methods, title, short summary.
 
-Call APIs with Cursor HTTP/MCP tools. The only HTTP client in this repo is GET inside `tools/upservice_mcp/` for the `get_task` MCP tool. Use `token_env` names; never write token values into files.
+Call APIs with Cursor HTTP/MCP tools. The only HTTP client in this repo is GET inside `tools/upservice_mcp/` for the public GET MCP tools. Use `token_env` names; never write token values into files.
+
+For public GET of these paths, call the named MCP tool. Do not construct the URL:
+
+- GET `/v1/tasks/{id}` → `get_task`
+- GET `/v1/projects/{id}` → `get_project`
+- GET `/v1/sprints/{id}` → `get_sprint`
+- GET `/v1/directories/{id}` → `get_directory`
+- GET `/v1/directory-records/{id}` → `get_directory_record`
+- GET `/v1/tasks` → `list_tasks`
+- GET `/v1/projects` → `list_projects`
+- GET `/v1/sprints` → `list_sprints`
+- GET `/v1/employees` → `list_employees`
+- GET `/v1/tags` → `list_tags`
+- GET `/v1/directories` → `list_directories`
+- GET `/v1/directory-records` → `list_directory_records`
+
+If that tool is not in the available MCP tool list: do not guess the public path. Report that Cursor must copy `docs/examples/mcp.json` into `.cursor/mcp.json` and reload MCP. Do not stop `index-system` catalog discovery via `catalog_hint` / OpenAPI.
+
+If the tool returns `status_code` 429: call it again with the same arguments, up to two more times (three tool calls max). 429 is not "missing".
+
+There is no `get_employee` or `get_tag`. There are no MCP tools for channels, files, or external-channels.
 
 ## Output
 
