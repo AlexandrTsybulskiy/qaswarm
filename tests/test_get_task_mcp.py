@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from upservice_mcp import client as utc
@@ -212,3 +213,101 @@ def test_get_task_json_array_body_is_string(tmp_path: Path) -> None:
     body = result["body"]
     assert isinstance(body, str)
     assert json.loads(body) == payload
+
+
+def test_backoff_series() -> None:
+    assert utc.backoff_seconds(0) == 1.0
+    assert utc.backoff_seconds(1) == 2.0
+    assert utc.backoff_seconds(4) == 16.0
+    assert utc.backoff_seconds(5) == utc.MAX_WAIT
+
+
+def test_parse_retry_after_delta_seconds() -> None:
+    now = datetime(2026, 8, 18, tzinfo=timezone.utc)
+    assert utc.parse_retry_after("2", now=now) == 2.0
+
+
+def test_parse_retry_after_http_date() -> None:
+    now = datetime(2026, 8, 18, 12, 0, 0, tzinfo=timezone.utc)
+    later = now + timedelta(seconds=8)
+    http_date = later.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    assert utc.parse_retry_after(http_date, now=now) == 8.0
+
+
+def test_429_then_200_retries_once(tmp_path: Path) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
+    calls = {"n": 0}
+    sleeps: list[float] = []
+
+    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return 429, json.dumps({"detail": "slow down"}), {}
+        return 200, json.dumps({"id": 1}), {}
+
+    result = utc.get_task(
+        "1",
+        products_root=products,
+        environ={},
+        http_get=http_get,
+        sleep=sleeps.append,
+    )
+    assert result["status_code"] == 200
+    assert result["body"] == {"id": 1}
+    assert calls["n"] == 2
+    assert sleeps == [1.0]
+
+
+def test_retry_after_header_used(tmp_path: Path) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
+    sleeps: list[float] = []
+    calls = {"n": 0}
+
+    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return 429, "{}", {"Retry-After": "2"}
+        return 200, "{}", {}
+
+    utc.get_task(
+        "1",
+        products_root=products,
+        environ={},
+        http_get=http_get,
+        sleep=sleeps.append,
+    )
+    assert sleeps[0] >= 2.0
+
+
+def test_six_429_returns_429(tmp_path: Path) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
+    calls = {"n": 0}
+    sleeps: list[float] = []
+
+    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+        calls["n"] += 1
+        return 429, json.dumps({"detail": "rate"}), {}
+
+    result = utc.get_task(
+        "1",
+        products_root=products,
+        environ={},
+        http_get=http_get,
+        sleep=sleeps.append,
+    )
+    assert result["status_code"] == 429
+    assert calls["n"] == 6
+    assert sleeps == [1.0, 2.0, 4.0, 8.0, 16.0]
+    assert TOKEN not in json.dumps(result)
+
+
+def test_404_still_single_get_after_retry_logic(tmp_path: Path) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
+    calls = {"n": 0}
+
+    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+        calls["n"] += 1
+        return 404, "{}", {}
+
+    utc.get_task("1", products_root=products, environ={}, http_get=http_get, sleep=lambda _s: None)
+    assert calls["n"] == 1

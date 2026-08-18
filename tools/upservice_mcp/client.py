@@ -5,7 +5,8 @@ import re
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
-from datetime import datetime
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
@@ -130,6 +131,34 @@ def _error(status: int, message: str) -> dict[str, object]:
     return {"status_code": status, "body": {"error": message}}
 
 
+def backoff_seconds(wait_index: int) -> float:
+    if wait_index < 0:
+        wait_index = 0
+    if wait_index >= len(BACKOFF):
+        return MAX_WAIT
+    return min(BACKOFF[wait_index], MAX_WAIT)
+
+
+def parse_retry_after(value: str | None, *, now: datetime) -> float | None:
+    if not value:
+        return None
+    text = value.strip()
+    if text.isdigit():
+        return min(float(text), MAX_WAIT)
+    try:
+        target = parsedate_to_datetime(text)
+    except (TypeError, ValueError, IndexError):
+        return None
+    if target.tzinfo is None:
+        target = target.replace(tzinfo=timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    delta = (target - now).total_seconds()
+    if delta < 0:
+        return 0.0
+    return min(delta, MAX_WAIT)
+
+
 def get_task(
     task_id: str | int,
     *,
@@ -139,7 +168,6 @@ def get_task(
     sleep: Callable[[float], None] | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> dict[str, object]:
-    del sleep, now
     env = dict(environ) if environ is not None else dict(__import__("os").environ)
     task_id_text = str(task_id)
     if "/" in task_id_text:
@@ -173,13 +201,36 @@ def get_task(
         return _error(401, "missing token")
 
     getter = http_get or urllib_get
+    sleeper = sleep or __import__("time").sleep
+    clock = now or (lambda: datetime.now(timezone.utc))
     url = f"{base_url}/v1/tasks/{normalized}"
     headers = {"Authorization": authorization_header(token), "Accept": "application/json"}
-    status, text, _hdrs = getter(url, headers, GET_TIMEOUT)
-    if status == 0:
-        result = _error(0, text or "request failed")
+    last_status = 0
+    last_text = ""
+    wait_index = 0
+    for attempt in range(MAX_ATTEMPTS):
+        last_status, last_text, resp_headers = getter(url, headers, GET_TIMEOUT)
+        if last_status != 429:
+            break
+        if attempt == MAX_ATTEMPTS - 1:
+            break
+        header_val = None
+        for key, val in resp_headers.items():
+            if key.lower() == "retry-after":
+                header_val = val
+                break
+        wait = parse_retry_after(header_val, now=clock())
+        if wait is None:
+            wait = backoff_seconds(wait_index)
+            wait_index += 1
+        else:
+            wait = min(wait, MAX_WAIT)
+            wait_index += 1
+        sleeper(wait)
+    if last_status == 0:
+        result = _error(0, last_text or "request failed")
     else:
-        result = {"status_code": status, "body": _normalize_body(_decode_body(text))}
+        result = {"status_code": last_status, "body": _normalize_body(_decode_body(last_text))}
     body = result["body"]
     if not isinstance(body, (dict, str)):
         body = _normalize_body(body)
