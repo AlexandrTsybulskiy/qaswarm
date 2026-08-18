@@ -14,6 +14,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 4. Put API tokens in `products/<product-id>/.env` or Cursor MCP. Never commit them.
 5. Open this folder as the Cursor workspace.
 6. Connect Figma MCP in Cursor to analyze task design links.
+7. Copy `docs/examples/mcp.json` into `.cursor/mcp.json` (gitignored) so Hunter can call `get_task`. Reload MCP in Cursor. Token stays in `products/upservice/.env`, not in mcp.json.
 
 ## Commands (natural language)
 
@@ -27,7 +28,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 ## Checks
 
 ```powershell
-python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py -v
+python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py tests/test_get_task_mcp.py -v
 python tools/memory_schema.py fixtures/demo-catalog/expected
 python tools/memory_schema.py memory/<product-id>
 ```

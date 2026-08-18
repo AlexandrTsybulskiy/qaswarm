@@ -4,7 +4,10 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 from upservice_mcp import client as utc
+from upservice_mcp import server as ums
 
 CONFIG = """id: upservice
 name: Upservice
@@ -311,3 +314,20 @@ def test_404_still_single_get_after_retry_logic(tmp_path: Path) -> None:
 
     utc.get_task("1", products_root=products, environ={}, http_get=http_get, sleep=lambda _s: None)
     assert calls["n"] == 1
+
+
+def test_server_get_task_uses_repo_products(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_get_task(
+        task_id: str | int, *, products_root: Path, **kwargs: object
+    ) -> dict[str, object]:
+        seen["task_id"] = task_id
+        seen["products_root"] = products_root
+        return {"status_code": 200, "body": {"id": int(task_id)}}
+
+    monkeypatch.setattr(ums.client, "get_task", fake_get_task)
+    result = ums.get_task("5201511")
+    assert result == {"status_code": 200, "body": {"id": 5201511}}
+    assert seen["task_id"] == "5201511"
+    assert seen["products_root"] == ums.REPO_ROOT / "products"
