@@ -20,7 +20,7 @@ mcp = FastMCP("upservice")
 
 
 @mcp.tool()
-def get_task(task_id: str) -> dict:
+def get_task(task_id: str | int) -> dict:
     """Fetch one Upservice task by id from the public API.
 
     Call this instead of constructing GET /v1/tasks/{id}.

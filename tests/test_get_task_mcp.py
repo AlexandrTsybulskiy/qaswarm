@@ -5,6 +5,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import get_type_hints
 
 import pytest
 
@@ -333,6 +334,23 @@ def test_server_get_task_uses_repo_products(monkeypatch: pytest.MonkeyPatch) -> 
     assert result == {"status_code": 200, "body": {"id": 5201511}}
     assert seen["task_id"] == "5201511"
     assert seen["products_root"] == ums.REPO_ROOT / "products"
+
+
+def test_server_get_task_accepts_numeric_task_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_get_task(
+        task_id: str | int, *, products_root: Path, **kwargs: object
+    ) -> dict[str, object]:
+        seen["task_id"] = task_id
+        return {"status_code": 200, "body": {"id": task_id}}
+
+    monkeypatch.setattr(ums.client, "get_task", fake_get_task)
+    result = ums.get_task(5201511)
+
+    assert result == {"status_code": 200, "body": {"id": 5201511}}
+    assert seen["task_id"] == 5201511
+    assert get_type_hints(ums.get_task)["task_id"] == str | int
 
 
 def test_server_script_imports_without_tools_on_sys_path() -> None:
