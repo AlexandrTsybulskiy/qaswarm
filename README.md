@@ -27,7 +27,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 ## Checks
 
 ```powershell
-python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py -v
+python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py -v
 python tools/memory_schema.py fixtures/demo-catalog/expected
 python tools/memory_schema.py memory/<product-id>
 ```
@@ -40,7 +40,7 @@ python tools/memory_schema.py memory/<product-id>
 4. Requirement with Figma: `task-<id>.md` records `source_design: figma`, the URL, action→expected-result items, and does not change Upservice.
 5. Requirement without design: the card records `source_design: none`, a design gap, and only requirements supported by the task text.
 6. Requirement repeat: analyzing the same task id merges into the same file and does not create a second slug.
-7. Testdocs from ready requirements: `testdocs/task-<id>.md` has one active case per Testable arrow, a checklist of those ids, schema `OK`; Upservice and Testmo are not called.
+7. Testdocs from ready requirements: `testdocs/task-<id>.md` has one active case per Testable arrow, a checklist of those ids, sibling `testdocs/task-<id>.csv` with those active rows, schema `OK`; Upservice and Testmo are not called.
 8. Testdocs without a ready card: stop; `_incoming` stays empty; no testdocs file is created.
 9. Testdocs repeat: same `action`+`expected` keeps the id; new text gets `next_id`; unmatched old cases become `orphan` and drop off the checklist.
 10. Verify from testdocs: `runs/task-<id>.md` has one result per `active` case, schema `OK`; Upservice and Testmo are not called.
@@ -54,3 +54,5 @@ Requirements analysis spec: `docs/superpowers/specs/2026-08-13-qa-swarm-requirem
 Test documentation spec: `docs/superpowers/specs/2026-08-14-qa-swarm-test-documentation-design.md`
 
 MCP verification spec: `docs/superpowers/specs/2026-08-14-qa-swarm-mcp-verification-design.md`
+
+Testmo CSV export spec: `docs/superpowers/specs/2026-08-17-qa-swarm-testmo-csv-export-design.md`

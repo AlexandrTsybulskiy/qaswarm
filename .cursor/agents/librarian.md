@@ -67,9 +67,17 @@ Then add or update a row in `testdocs/index.md`:
 | task-1 | 1 | ready | 3 | [task-1.md](task-1.md) |
 ```
 
-`Task` is `task_id` or empty when `none`. `Active` is the number of `status: active` cases. Do not invent cases or rewrite action/expected. Do not call Figma, Upservice, or Testmo.
+`Task` is `task_id` or empty when `none`. `Active` is the number of `status: active` cases.
 
-Match `fixtures/demo-testdoc/expected/` for shape (ids and sections, not demo titles).
+Then export CSV (do not build rows by hand):
+
+`py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --output memory/<product-id>/testdocs/<slug>.csv`
+
+If the CSV command fails, write nothing further, do not delete `_incoming/`, and report failure.
+
+Keep: Do not call Figma, Upservice, or Testmo. Match `fixtures/demo-testdoc/expected/` for shape (ids, sections, and `task-1.csv`).
+
+Do not invent cases or rewrite action/expected.
 
 ## Run incoming
 

@@ -310,6 +310,54 @@ def validate_testdoc_suite(path: Path) -> list[str]:
     return errors
 
 
+def parse_testdoc_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
+    import csv
+
+    with path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        header = list(reader.fieldnames or [])
+        rows = [{key: (row.get(key) or "") for key in header} for row in reader]
+    return header, rows
+
+
+def validate_testdoc_csv(suite_path: Path) -> list[str]:
+    import testdoc_csv
+    import testdoc_merge
+
+    errors: list[str] = []
+    if suite_path.name == "index.md":
+        return errors
+    csv_path = suite_path.with_suffix(".csv")
+    if not csv_path.is_file():
+        errors.append(f"{csv_path}: missing testdoc CSV")
+        return errors
+    header, rows = parse_testdoc_csv(csv_path)
+    if header != list(testdoc_csv.CSV_COLUMNS):
+        errors.append(f"{csv_path}: header must be Name,Folder,Steps,Expected,Id")
+        return errors
+    meta, body = parse_frontmatter(suite_path.read_text(encoding="utf-8"))
+    want = []
+    if meta.get("status") != "draft":
+        want = testdoc_csv.csv_rows(
+            meta.get("title", ""),
+            testdoc_merge.parse_canonical_cases(body),
+            testdoc_csv.checklist_ids(body),
+        )
+    got_ids = [row.get("Id", "") for row in rows]
+    want_ids = [row["Id"] for row in want]
+    if got_ids != want_ids:
+        errors.append(f"{csv_path}: Id mismatch {got_ids!r} != {want_ids!r}")
+    for index, expected_row in enumerate(want):
+        if index >= len(rows):
+            break
+        for key in testdoc_csv.CSV_COLUMNS:
+            if rows[index].get(key, "") != expected_row.get(key, ""):
+                errors.append(f"{csv_path}: {key} mismatch for {expected_row['Id']}")
+    if len(rows) != len(want):
+        errors.append(f"{csv_path}: row count {len(rows)} != active {len(want)}")
+    return errors
+
+
 @dataclass
 class RunResult:
     case_id: str
@@ -526,10 +574,16 @@ def validate_memory_tree(root: Path) -> list[str]:
             errors.extend(validate_requirement_card(card))
     testdocs_dir = root / "testdocs"
     if testdocs_dir.is_dir():
+        suite_stems: set[str] = set()
         for card in testdocs_dir.glob("*.md"):
             if card.name == "index.md":
                 continue
+            suite_stems.add(card.stem)
             errors.extend(validate_testdoc_suite(card))
+            errors.extend(validate_testdoc_csv(card))
+        for csv_file in testdocs_dir.glob("*.csv"):
+            if csv_file.stem == "index" or csv_file.stem not in suite_stems:
+                errors.append(f"{csv_file}: csv without testdoc suite")
     runs_dir = root / "runs"
     if runs_dir.is_dir():
         for card in runs_dir.glob("*.md"):

@@ -246,6 +246,7 @@ def test_demo_requirement_incoming_complete() -> None:
 TD_INCOMING = ROOT / "fixtures" / "demo-testdoc" / "incoming"
 TD_EXISTING = ROOT / "fixtures" / "demo-testdoc" / "existing" / "testdocs" / "task-1.md"
 TD_EXPECTED = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.md"
+TD_CSV = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.csv"
 
 
 def test_demo_catalog_tree_still_valid_without_testdocs() -> None:
@@ -333,6 +334,73 @@ def test_testdoc_smoke_tier_ok(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert memory_schema.validate_testdoc_suite(card) == []
+
+
+def test_testdoc_csv_valid_for_fixture() -> None:
+    assert memory_schema.validate_testdoc_csv(TD_EXPECTED) == []
+
+
+def test_testdoc_csv_missing_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(TD_EXPECTED.read_text(encoding="utf-8"), encoding="utf-8")
+    errors = memory_schema.validate_testdoc_csv(card)
+    assert any("missing testdoc CSV" in error for error in errors)
+
+
+def test_testdoc_csv_wrong_id_fails(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(TD_EXPECTED.read_text(encoding="utf-8"), encoding="utf-8")
+    csv_path = tmp_path / "task-1.csv"
+    csv_path.write_text(
+        TD_CSV.read_text(encoding="utf-8").replace("tc-1-1", "tc-1-99", 1),
+        encoding="utf-8",
+        newline="\n",
+    )
+    errors = memory_schema.validate_testdoc_csv(card)
+    assert any("Id" in error or "mismatch" in error.lower() for error in errors)
+
+
+def test_memory_tree_stray_csv_fails(tmp_path: Path) -> None:
+    testdocs = tmp_path / "testdocs"
+    testdocs.mkdir()
+    (testdocs / "index.md").write_text("# Testdocs\n", encoding="utf-8")
+    (testdocs / "index.csv").write_text(
+        "Name,Folder,Steps,Expected,Id\n", encoding="utf-8"
+    )
+    errors = memory_schema.validate_memory_tree(tmp_path)
+    assert any("index.csv" in error for error in errors)
+
+
+def test_memory_tree_suite_without_csv_fails(tmp_path: Path) -> None:
+    testdocs = tmp_path / "testdocs"
+    testdocs.mkdir()
+    (testdocs / "task-1.md").write_text(
+        TD_EXPECTED.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    errors = memory_schema.validate_memory_tree(tmp_path)
+    assert any(
+        "task-1.csv" in error and "missing testdoc CSV" in error for error in errors
+    )
+
+
+def test_testdoc_csv_skips_index(tmp_path: Path) -> None:
+    index = tmp_path / "index.md"
+    index.write_text("# Testdocs\n", encoding="utf-8")
+    assert memory_schema.validate_testdoc_csv(index) == []
+
+
+def test_testdoc_csv_draft_requires_header_only(tmp_path: Path) -> None:
+    card = tmp_path / "task-1.md"
+    card.write_text(
+        TD_EXPECTED.read_text(encoding="utf-8").replace(
+            "status: ready", "status: draft", 1
+        ),
+        encoding="utf-8",
+    )
+    card.with_suffix(".csv").write_text(
+        "Name,Folder,Steps,Expected,Id\n", encoding="utf-8", newline="\n"
+    )
+    assert memory_schema.validate_testdoc_csv(card) == []
 
 
 RUN_INCOMING = ROOT / "fixtures" / "demo-run" / "incoming"

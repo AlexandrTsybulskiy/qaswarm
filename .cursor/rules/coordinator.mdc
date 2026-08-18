@@ -19,6 +19,6 @@ Skills: `index-system`, `recall`, `refresh`, `analyze-requirement`, `generate-te
 
 For analyze-requirement: hunter may fetch one task snapshot into `tasks/task-<id>.md` via librarian; analyst drafts requirements; librarian writes `requirements/`. Do not write to the product.
 
-For generate-testdocs: only if `requirements/<slug>.md` is `ready`; scribe drafts `_incoming/testdocs.md`; librarian writes `testdocs/` via the merge helper. Do not start analyze-requirement from this skill. Do not write to the product or Testmo.
+For generate-testdocs: only if `requirements/<slug>.md` is `ready`; scribe drafts `_incoming/testdocs.md`; librarian writes `testdocs/` via the merge helper and `testdoc_csv.py`. Do not start analyze-requirement from this skill. Do not write to the product or Testmo.
 
 For verify-testdocs: only if `testdocs/<slug>.md` has an `active` case; verifier drafts `_incoming/run.md`; librarian overwrites `runs/<slug>.md`. Do not start generate-testdocs from this skill. Do not write to the product or Testmo.
