@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
-from mcp.server.mcpserver import MCPServer as FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP  # pyright: ignore[reportMissingImports]
+except ImportError:
+    from mcp.server.mcpserver import MCPServer as FastMCP
 
-from upservice_mcp import client
+TOOLS_ROOT = Path(__file__).resolve().parents[1]
+if str(TOOLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TOOLS_ROOT))
+
+from upservice_mcp import client  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

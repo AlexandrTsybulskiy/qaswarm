@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -331,3 +333,21 @@ def test_server_get_task_uses_repo_products(monkeypatch: pytest.MonkeyPatch) -> 
     assert result == {"status_code": 200, "body": {"id": 5201511}}
     assert seen["task_id"] == "5201511"
     assert seen["products_root"] == ums.REPO_ROOT / "products"
+
+
+def test_server_script_imports_without_tools_on_sys_path() -> None:
+    code = (
+        "import runpy, sys; "
+        "sys.path = [x for x in sys.path if not x.endswith('tools')]; "
+        "runpy.run_path('tools/upservice_mcp/server.py', run_name='not_main')"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=ums.REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
