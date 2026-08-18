@@ -107,7 +107,12 @@ def _normalize_body(decoded: Any) -> dict[str, Any] | str:
 
 def _redact_token_in_value(value: Any, token: str) -> Any:
     if isinstance(value, dict):
-        return {key: _redact_token_in_value(item, token) for key, item in value.items()}
+        return {
+            (key.replace(token, "[REDACTED]") if isinstance(key, str) else key): _redact_token_in_value(
+                item, token
+            )
+            for key, item in value.items()
+        }
     if isinstance(value, list):
         return [_redact_token_in_value(item, token) for item in value]
     if isinstance(value, str):

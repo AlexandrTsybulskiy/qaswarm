@@ -185,6 +185,21 @@ def test_get_task_redacts_token_from_response_body(tmp_path: Path) -> None:
     assert "note" in body
 
 
+def test_get_task_redacts_token_from_response_key(tmp_path: Path) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
+
+    def http_get(url: str, headers: dict[str, str], timeout: float) -> tuple[int, str, dict[str, str]]:
+        return 200, json.dumps({TOKEN: "value"}), {}
+
+    result = utc.get_task("1", products_root=products, environ={}, http_get=http_get)
+    assert result["status_code"] == 200
+    assert TOKEN not in json.dumps(result)
+    body = result["body"]
+    assert isinstance(body, dict)
+    assert "[REDACTED]" in body
+    assert body["[REDACTED]"] == "value"
+
+
 def test_get_task_json_array_body_is_string(tmp_path: Path) -> None:
     products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     payload = [{"id": 1}, {"id": 2}]
