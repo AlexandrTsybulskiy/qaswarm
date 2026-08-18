@@ -19,6 +19,8 @@ Skills: `index-system`, `recall`, `refresh`, `analyze-requirement`, `generate-te
 
 For analyze-requirement: hunter may fetch one task snapshot into `tasks/task-<id>.md` via librarian; analyst drafts requirements; librarian writes `requirements/`. Do not write to the product.
 
+If Hunter reports the MCP tool `get_task` is missing: do not launch a second hunter and do not tell it to guess `/v1/tasks/{id}`. Tell the human to copy `docs/examples/mcp.json` into `.cursor/mcp.json` and reload MCP. Token stays in `products/upservice/.env`.
+
 For generate-testdocs: only if `requirements/<slug>.md` is `ready`; scribe drafts `_incoming/testdocs.md`; librarian writes `testdocs/` via the merge helper and `testdoc_csv.py`. Do not start analyze-requirement from this skill. Do not write to the product or Testmo.
 
 For verify-testdocs: only if `testdocs/<slug>.md` has an `active` case; verifier drafts `_incoming/run.md`; librarian overwrites `runs/<slug>.md`. Do not start generate-testdocs from this skill. Do not write to the product or Testmo.
