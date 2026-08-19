@@ -4,6 +4,9 @@ public_api:
   base_url: https://public.upservice.io/
   catalog_hint: /openapi.json
   token_env: UPSERVICE_PUBLIC_API_TOKEN
+testmo:
+  base_url: https://softvoya.testmo.net
+  token_env: TESTMO_API_KEY
 # internal_api:
 #   base_url: https://internal-api.example.com
 #   token_env: INTERNAL_API_TOKEN
