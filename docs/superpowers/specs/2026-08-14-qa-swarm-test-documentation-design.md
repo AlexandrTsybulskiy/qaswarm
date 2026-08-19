@@ -56,7 +56,7 @@
 человек → координатор
        → [если нет ready requirements] стоп, сначала analyze-requirement
        → Scribe → _incoming/testdocs.md + MANIFEST
-       → Librarian → testdocs/<slug>.md + testdocs/index.md
+       → Librarian → testdocs/md/<slug>.md + testdocs/index.md
        → человек (путь, active/orphan, gap)
 ```
 
@@ -73,7 +73,7 @@
 
 ```text
 memory/upservice/testdocs/index.md
-memory/upservice/testdocs/<slug>.md
+memory/upservice/testdocs/md/<slug>.md
 ```
 
 `<slug>` совпадает со slug карточки требований (`task-<id>` или slug спеки без тикета).
@@ -175,7 +175,7 @@ Scribe пишет кейсы **без** id. Секции называются `#
 1. Резолв продукта. Непустой `_incoming/` — стоп.
 2. Найти `memory/<id>/requirements/<slug>.md`. Нет файла или `status` не `ready` — стоп: сказать запустить `analyze-requirement`. Scribe не стартует. Testable из чата не брать.
 3. Scribe: только эта карточка → incoming без id.
-4. Librarian: merge с `testdocs/<slug>.md` → канон + строка в `testdocs/index.md` → схема.
+4. Librarian: merge с `testdocs/md/<slug>.md` → канон + строка в `testdocs/index.md` → схема.
 5. Координатор отчитывается. «Тест-доки готовы» только если файл есть и схема `OK`.
 
 Спека без тикета: тот же поток, `task_id: none`, id вида `tc-<slug>-<n>`.
@@ -204,7 +204,7 @@ Browser MCP и Figma MCP не используются.
 **Сценарий 1 — ready → сюит**  
 Цель: атомарные кейсы из Testable.  
 Шаги: команда на задачу с `requirements/task-<id>.md` в `ready`.  
-Ожидание: `testdocs/task-<id>.md`, по кейсу на каждый пункт со стрелкой, чек-лист из этих id, схема `OK`; Upservice и Testmo не вызваны.
+Ожидание: `testdocs/md/task-<id>.md`, по кейсу на каждый пункт со стрелкой, чек-лист из этих id, схема `OK`; Upservice и Testmo не вызваны.
 
 **Сценарий 2 — нет карточки**  
 Цель: контуры не сливаются.  

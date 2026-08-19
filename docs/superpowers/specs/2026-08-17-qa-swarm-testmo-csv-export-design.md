@@ -6,13 +6,13 @@
 
 ## 1. Зачем
 
-Канонические кейсы лежат в `testdocs/<slug>.md`. Чтобы импортировать их в Testmo, нужен CSV, который мастер импорта сопоставляет с полями шаблона. Файл должен появляться вместе с генерацией сюита, с теми же стабильными `tc-…` id.
+Канонические кейсы лежат в `testdocs/md/<slug>.md`. Чтобы импортировать их в Testmo, нужен CSV, который мастер импорта сопоставляет с полями шаблона. Файл должен появляться вместе с генерацией сюита, с теми же стабильными `tc-…` id.
 
 Канон по-прежнему markdown в git. CSV — производный артефакт для ручного импорта. Агенты не вызывают Testmo API и не пишут в Upservice.
 
 ## 2. Цели v1
 
-- После успешного merge сюита рядом появляется `testdocs/<slug>.csv`.
+- После успешного merge сюита появляется `testdocs/csv/<slug>.csv`.
 - Одна строка CSV = один кейс `active`. Колонки фиксированы и мапятся на шаблон Testmo «case text» (или аналог) через мастер.
 - Тот же Python-хелпер можно запустить отдельно, чтобы дописать CSV к уже лежащим сюитам.
 - `tools/memory_schema.py` считает память невалидной, если CSV отсутствует или расходится с `active` кейсами.
@@ -35,8 +35,8 @@
 
 | Тема | Решение |
 |------|---------|
-| Канон | `testdocs/<slug>.md`; CSV не карточка |
-| Где файл | `memory/<product-id>/testdocs/<slug>.csv`, в git |
+| Канон | `testdocs/md/<slug>.md`; CSV не карточка |
+| Где файл | `memory/<product-id>/testdocs/csv/<slug>.csv`, в git |
 | Когда писать | Librarian сразу после успешного `testdoc_merge.py` |
 | Кто рендерит | Python-хелпер `tools/testdoc_csv.py`, не агент |
 | Какие кейсы | Только `status: active`, порядок = чек-лист |
@@ -57,8 +57,8 @@
 ```text
 человек → координатор (generate-testdocs)
        → Scribe → _incoming/testdocs.md
-       → Librarian → testdoc_merge.py → testdocs/<slug>.md
-                  → testdoc_csv.py   → testdocs/<slug>.csv
+       → Librarian → testdoc_merge.py → testdocs/md/<slug>.md
+                  → testdoc_csv.py   → testdocs/csv/<slug>.csv
                   → memory_schema.py
        → человек (путь сюита, путь CSV, active/orphan, gap)
 человек импортирует CSV в Testmo вручную
@@ -78,11 +78,11 @@
 ## 6. Пути
 
 ```text
-memory/<product-id>/testdocs/<slug>.md
-memory/<product-id>/testdocs/<slug>.csv
+memory/<product-id>/testdocs/md/<slug>.md
+memory/<product-id>/testdocs/csv/<slug>.csv
 ```
 
-`<slug>` тот же, что у сюита и карточки требований. `testdocs/index.md` CSV не перечисляет. Файл `*.csv` карточкой не считается: нет YAML-frontmatter, `validate_testdoc_suite` его не парсит как markdown.
+`<slug>` тот же, что у сюита и карточки требований. `testdocs/index.md` CSV не перечисляет. Файл `*.csv` карточкой не считается: нет YAML-frontmatter, `validate_testdoc_suite` его не парсит как markdown. Сюит или CSV в корне `testdocs/` (кроме `index.md`) — `legacy testdoc path` (см. `docs/superpowers/specs/2026-08-19-qa-swarm-testdocs-md-csv-folders-design.md`).
 
 Повтор той же задачи: merge в тот же `.md`, CSV перезаписывается целиком из актуальных `active` кейсов (не merge по строкам CSV).
 
@@ -94,7 +94,7 @@ memory/<product-id>/testdocs/<slug>.csv
 Name,Folder,Steps,Expected,Id
 ```
 
-Дальше ноль или больше строк данных. Для сюита из фикстуры `fixtures/demo-testdoc/expected/testdocs/task-1.md` (три `active`, один `orphan` `tc-1-2`) в CSV ровно три строки данных: `tc-1-1`, `tc-1-3`, `tc-1-4` в порядке чек-листа. `tc-1-2` отсутствует.
+Дальше ноль или больше строк данных. Для сюита из фикстуры `fixtures/demo-testdoc/expected/testdocs/md/task-1.md` (три `active`, один `orphan` `tc-1-2`) в CSV ровно три строки данных: `tc-1-1`, `tc-1-3`, `tc-1-4` в порядке чек-листа. `tc-1-2` отсутствует.
 
 CLI:
 
@@ -121,7 +121,7 @@ py -3 tools/testdoc_csv.py --suite <path.md> --output <path.csv>
 После успешного `testdoc_merge.py` и обновления `testdocs/index.md` вызывает:
 
 ```text
-py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --output memory/<product-id>/testdocs/<slug>.csv
+py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/md/<slug>.md --output memory/<product-id>/testdocs/csv/<slug>.csv
 ```
 
 Затем `py -3 tools/memory_schema.py memory/<product-id>`. Только после `OK` удаляет incoming. Не вызывает Testmo.
@@ -137,7 +137,7 @@ py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --outp
 3. Схема. Не `OK` — incoming на месте, координатор не говорит «готово».
 4. Координатор: сюит, CSV, счётчики, gap.
 
-Добор без Scribe: человек или реализация первого прогона гоняет хелпер по уже лежащим `testdocs/*.md` (в т.ч. `task-5210629`), чтобы схема не падала на старых сюитах без CSV.
+Добор без Scribe: человек или реализация первого прогона гоняет хелпер по уже лежащим `testdocs/md/*.md` (в т.ч. `task-5210629`), чтобы схема не падала на старых сюитах без CSV.
 
 ## 10. Ошибки
 
@@ -146,8 +146,8 @@ py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --outp
 | Нет `.md` сюита | CLI код 1, CSV не писать |
 | Сюит не парсится | CLI код 1, CSV не писать |
 | Запись CSV не удалась после merge | Incoming не удалять, канон не считать готовым |
-| Нет соседнего CSV при наличии сюита `.md` (`index.md` не сюит) | Ошибка схемы |
-| `*.csv` без парного сюита `.md`, в том числе `index.csv` | Ошибка схемы |
+| Нет парного CSV при наличии сюита `testdocs/md/*.md` (`index.md` не сюит) | Ошибка схемы |
+| `testdocs/csv/*.csv` без парного сюита, в том числе `csv/index.csv` | Ошибка схемы |
 | Заголовок не `Name,Folder,Steps,Expected,Id` | Ошибка схемы |
 | Число строк ≠ число `active` | Ошибка схемы |
 | Порядок или поля не совпадают с чек-листом / кейсами | Ошибка схемы |
@@ -160,12 +160,12 @@ py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --outp
 
 ## 11. Проверка
 
-Фикстура: `fixtures/demo-testdoc/expected/testdocs/task-1.csv` рядом с ожидаемым `.md`. Юнит-тесты хелпера: три `active` без orphan; пустой/`draft` сюит → только заголовок; поле с запятой и кавычкой экранируется и обратно читается. Схема: нет CSV; лишний CSV; рассинхрон `Id`.
+Фикстура: `fixtures/demo-testdoc/expected/testdocs/md/task-1.md` и `fixtures/demo-testdoc/expected/testdocs/csv/task-1.csv`. Юнит-тесты хелпера: три `active` без orphan; пустой/`draft` сюит → только заголовок; поле с запятой и кавычкой экранируется и обратно читается. Схема: нет CSV; лишний CSV; рассинхрон `Id`.
 
 **Сценарий 1 — generate-testdocs**  
 Цель: CSV появляется вместе с сюитом.  
 Шаги: команда на задачу с `ready` требованиями.  
-Ожидание: `testdocs/<slug>.md` и `testdocs/<slug>.csv`; строки = `active`; Testmo не вызван; схема `OK`.
+Ожидание: `testdocs/md/<slug>.md` и `testdocs/csv/<slug>.csv`; строки = `active`; Testmo не вызван; схема `OK`.
 
 **Сценарий 2 — повтор**  
 Цель: CSV следует за merge id.  
@@ -175,7 +175,7 @@ py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --outp
 **Сценарий 3 — добор**  
 Цель: старый сюит без CSV становится валидным.  
 Шаги: `testdoc_csv.py` на существующий `.md`.  
-Ожидание: соседний CSV; схема `OK`.
+Ожидание: CSV в `testdocs/csv/`; схема `OK`.
 
 Прогон: `py -3 -m pytest tests/test_testdoc_csv.py tests/test_memory_schema.py tests/test_testdoc_merge.py -v` и `py -3 tools/memory_schema.py memory/upservice` → `OK`.
 
@@ -183,7 +183,7 @@ py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --outp
 
 - `tools/testdoc_csv.py` + `tests/test_testdoc_csv.py`
 - Расширить `tools/memory_schema.py` (соседний CSV, лишние CSV)
-- `fixtures/demo-testdoc/expected/testdocs/task-1.csv`
+- `fixtures/demo-testdoc/expected/testdocs/csv/task-1.csv`
 - Librarian / `generate-testdocs` skill / при необходимости координатор (путь CSV в отчёте)
 - Добор CSV для уже лежащих сюитов в `memory/upservice/testdocs/`
 - Строка в README, если там перечислены артефакты testdocs

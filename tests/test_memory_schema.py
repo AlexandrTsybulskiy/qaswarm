@@ -244,9 +244,39 @@ def test_demo_requirement_incoming_complete() -> None:
 
 
 TD_INCOMING = ROOT / "fixtures" / "demo-testdoc" / "incoming"
-TD_EXISTING = ROOT / "fixtures" / "demo-testdoc" / "existing" / "testdocs" / "task-1.md"
-TD_EXPECTED = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.md"
-TD_CSV = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.csv"
+TD_EXISTING = ROOT / "fixtures" / "demo-testdoc" / "existing" / "testdocs" / "md" / "task-1.md"
+TD_EXPECTED = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "md" / "task-1.md"
+TD_CSV = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "csv" / "task-1.csv"
+
+
+def _write_testdoc_tree(
+    root: Path, md_text: str, csv_text: str | None
+) -> Path:
+    md_dir = root / "testdocs" / "md"
+    csv_dir = root / "testdocs" / "csv"
+    md_dir.mkdir(parents=True)
+    csv_dir.mkdir(parents=True)
+    card = md_dir / "task-1.md"
+    card.write_text(md_text, encoding="utf-8")
+    if csv_text is not None:
+        (csv_dir / "task-1.csv").write_text(
+            csv_text, encoding="utf-8", newline="\n"
+        )
+    return card
+
+
+def test_testdoc_path_helpers() -> None:
+    root = Path("/tmp/memory/upservice")
+    assert memory_schema.testdoc_suite_path(root, "task-1") == (
+        root / "testdocs" / "md" / "task-1.md"
+    )
+    assert memory_schema.testdoc_csv_path(root, "task-1") == (
+        root / "testdocs" / "csv" / "task-1.csv"
+    )
+    suite = root / "testdocs" / "md" / "task-1.md"
+    assert memory_schema.testdoc_csv_for_suite(suite) == (
+        root / "testdocs" / "csv" / "task-1.csv"
+    )
 
 
 def test_demo_catalog_tree_still_valid_without_testdocs() -> None:
@@ -341,20 +371,19 @@ def test_testdoc_csv_valid_for_fixture() -> None:
 
 
 def test_testdoc_csv_missing_fails(tmp_path: Path) -> None:
-    card = tmp_path / "task-1.md"
-    card.write_text(TD_EXPECTED.read_text(encoding="utf-8"), encoding="utf-8")
+    card = _write_testdoc_tree(
+        tmp_path, TD_EXPECTED.read_text(encoding="utf-8"), None
+    )
     errors = memory_schema.validate_testdoc_csv(card)
     assert any("missing testdoc CSV" in error for error in errors)
+    assert any("csv" in error and "task-1.csv" in error for error in errors)
 
 
 def test_testdoc_csv_wrong_id_fails(tmp_path: Path) -> None:
-    card = tmp_path / "task-1.md"
-    card.write_text(TD_EXPECTED.read_text(encoding="utf-8"), encoding="utf-8")
-    csv_path = tmp_path / "task-1.csv"
-    csv_path.write_text(
+    card = _write_testdoc_tree(
+        tmp_path,
+        TD_EXPECTED.read_text(encoding="utf-8"),
         TD_CSV.read_text(encoding="utf-8").replace("tc-1-1", "tc-1-99", 1),
-        encoding="utf-8",
-        newline="\n",
     )
     errors = memory_schema.validate_testdoc_csv(card)
     assert any("Id" in error or "mismatch" in error.lower() for error in errors)
@@ -362,25 +391,54 @@ def test_testdoc_csv_wrong_id_fails(tmp_path: Path) -> None:
 
 def test_memory_tree_stray_csv_fails(tmp_path: Path) -> None:
     testdocs = tmp_path / "testdocs"
-    testdocs.mkdir()
+    csv_dir = testdocs / "csv"
+    csv_dir.mkdir(parents=True)
     (testdocs / "index.md").write_text("# Testdocs\n", encoding="utf-8")
-    (testdocs / "index.csv").write_text(
+    (csv_dir / "index.csv").write_text(
         "Name,Folder,Steps,Expected,Id\n", encoding="utf-8"
     )
     errors = memory_schema.validate_memory_tree(tmp_path)
-    assert any("index.csv" in error for error in errors)
+    assert any("index.csv" in error and "csv without testdoc suite" in error for error in errors)
 
 
-def test_memory_tree_suite_without_csv_fails(tmp_path: Path) -> None:
+def test_memory_tree_legacy_testdoc_md_fails(tmp_path: Path) -> None:
     testdocs = tmp_path / "testdocs"
     testdocs.mkdir()
     (testdocs / "task-1.md").write_text(
         TD_EXPECTED.read_text(encoding="utf-8"), encoding="utf-8"
     )
     errors = memory_schema.validate_memory_tree(tmp_path)
-    assert any(
-        "task-1.csv" in error and "missing testdoc CSV" in error for error in errors
+    assert any("legacy testdoc path" in error and "task-1.md" in error for error in errors)
+
+
+def test_memory_tree_legacy_testdoc_csv_fails(tmp_path: Path) -> None:
+    testdocs = tmp_path / "testdocs"
+    testdocs.mkdir()
+    (testdocs / "index.md").write_text("# Testdocs\n", encoding="utf-8")
+    (testdocs / "task-1.csv").write_text(
+        "Name,Folder,Steps,Expected,Id\n", encoding="utf-8"
     )
+    errors = memory_schema.validate_memory_tree(tmp_path)
+    assert any("legacy testdoc path" in error and "task-1.csv" in error for error in errors)
+
+
+def test_memory_tree_suite_without_csv_fails(tmp_path: Path) -> None:
+    _write_testdoc_tree(tmp_path, TD_EXPECTED.read_text(encoding="utf-8"), None)
+    errors = memory_schema.validate_memory_tree(tmp_path)
+    assert any("missing testdoc CSV" in error for error in errors)
+
+
+def test_memory_tree_testdocs_md_csv_ok(tmp_path: Path) -> None:
+    import shutil
+
+    shutil.copytree(EXPECTED, tmp_path, dirs_exist_ok=True)
+    _write_testdoc_tree(
+        tmp_path,
+        TD_EXPECTED.read_text(encoding="utf-8"),
+        TD_CSV.read_text(encoding="utf-8"),
+    )
+    (tmp_path / "testdocs" / "index.md").write_text("# Testdocs\n", encoding="utf-8")
+    assert memory_schema.validate_memory_tree(tmp_path) == []
 
 
 def test_testdoc_csv_skips_index(tmp_path: Path) -> None:
@@ -390,15 +448,11 @@ def test_testdoc_csv_skips_index(tmp_path: Path) -> None:
 
 
 def test_testdoc_csv_draft_requires_header_only(tmp_path: Path) -> None:
-    card = tmp_path / "task-1.md"
-    card.write_text(
-        TD_EXPECTED.read_text(encoding="utf-8").replace(
-            "status: ready", "status: draft", 1
-        ),
-        encoding="utf-8",
+    text = TD_EXPECTED.read_text(encoding="utf-8").replace(
+        "status: ready", "status: draft", 1
     )
-    card.with_suffix(".csv").write_text(
-        "Name,Folder,Steps,Expected,Id\n", encoding="utf-8", newline="\n"
+    card = _write_testdoc_tree(
+        tmp_path, text, "Name,Folder,Steps,Expected,Id\n"
     )
     assert memory_schema.validate_testdoc_csv(card) == []
 
@@ -548,7 +602,7 @@ def test_memory_tree_run_requires_existing_testdoc(tmp_path: Path) -> None:
 
     errors = memory_schema.validate_memory_tree(tmp_path)
 
-    assert any("missing testdoc testdocs/task-1.md" in error for error in errors)
+    assert any("missing testdoc testdocs/md/task-1.md" in error for error in errors)
 
 
 def test_demo_run_incoming_complete() -> None:

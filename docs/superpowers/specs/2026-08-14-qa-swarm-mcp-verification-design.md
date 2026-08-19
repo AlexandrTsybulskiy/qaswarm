@@ -13,7 +13,7 @@
 ## 2. Цели v1
 
 - Команда «проверь сюит &lt;id&gt;» даёт канонический прогон в `memory/upservice/runs/`.
-- Вход: только `testdocs/<slug>.md` хотя бы с одним кейсом `active`. Иначе стоп, generate-testdocs сам не запускается.
+- Вход: только `testdocs/md/<slug>.md` хотя бы с одним кейсом `active`. Иначе стоп, generate-testdocs сам не запускается.
 - Одна команда — один сюит. `orphan` не гоняем.
 - Канал по кейсу: UI → browser MCP, API → HTTP; неясно или канал недоступен → `blocked`, не `fail`.
 - Smoke: опциональный `tier: smoke` на кейсе testdocs. Все smoke сначала; любой не `pass` → остальные `skipped`. Нет smoke — весь сюит без ворот. После прошедших smoke обычный `fail` сюит не стопает.
@@ -60,7 +60,7 @@
 
 ```text
 человек → координатор
-       → [нет testdocs/<slug>.md или нет active] стоп, сначала generate-testdocs
+       → [нет testdocs/md/<slug>.md или нет active] стоп, сначала generate-testdocs
        → [непустой _incoming/] стоп
        → Verifier → _incoming/run.md + MANIFEST
        → Librarian → runs/<slug>.md + runs/index.md
@@ -170,7 +170,7 @@ Verifier пишет секции результатов **с id** из testdocs.
 
 ### Verifier (новое)
 
-Субагент `verifier`. Читает только канон `testdocs/<slug>.md` и конфиг продукта.
+Субагент `verifier`. Читает только канон `testdocs/md/<slug>.md` и конфиг продукта.
 
 Классификация (по `action` и `expected`, без поля канала в testdocs):
 
@@ -207,7 +207,7 @@ Browser MCP только если `mcp.browser` истинно и задан `ui
 ## 9. Поток
 
 1. Резолв продукта. Непустой `_incoming/` — стоп.
-2. Найти `memory/<id>/testdocs/<slug>.md`. Нет файла или нет ни одного `active` — стоп: сказать запустить `generate-testdocs`. Verifier не стартует. Кейсы из чата не брать.
+2. Найти `memory/<id>/testdocs/md/<slug>.md`. Нет файла или нет ни одного `active` — стоп: сказать запустить `generate-testdocs`. Verifier не стартует. Кейсы из чата не брать.
 3. Verifier: сюит + конфиг → incoming со всеми `active` id.
 4. Librarian: полнота id, секреты, overwrite `runs/<slug>.md`, строка в `runs/index.md`, схема.
 5. Координатор отчитывается. «Прогон готов» только если файл есть и схема `OK`.
@@ -240,7 +240,7 @@ Browser MCP только если `mcp.browser` истинно и задан `ui
 
 **Сценарий 1 — сюит → прогон**  
 Цель: все `active` получают вердикт.  
-Шаги: команда на задачу с `testdocs/task-<id>.md` и хотя бы одним исполняемым каналом.  
+Шаги: команда на задачу с `testdocs/md/task-<id>.md` и хотя бы одним исполняемым каналом.  
 Ожидание: `runs/task-<id>.md`, по строке на каждый `active`, схема `OK`; Upservice и Testmo не вызваны.
 
 **Сценарий 2 — нет сюита**  
