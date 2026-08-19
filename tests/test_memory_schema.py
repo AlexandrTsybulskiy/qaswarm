@@ -249,6 +249,20 @@ TD_EXPECTED = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "ta
 TD_CSV = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.csv"
 
 
+def test_testdoc_path_helpers() -> None:
+    root = Path("/tmp/memory/upservice")
+    assert memory_schema.testdoc_suite_path(root, "task-1") == (
+        root / "testdocs" / "md" / "task-1.md"
+    )
+    assert memory_schema.testdoc_csv_path(root, "task-1") == (
+        root / "testdocs" / "csv" / "task-1.csv"
+    )
+    suite = root / "testdocs" / "md" / "task-1.md"
+    assert memory_schema.testdoc_csv_for_suite(suite) == (
+        root / "testdocs" / "csv" / "task-1.csv"
+    )
+
+
 def test_demo_catalog_tree_still_valid_without_testdocs() -> None:
     errors = memory_schema.validate_memory_tree(EXPECTED)
     assert errors == []

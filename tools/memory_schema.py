@@ -37,6 +37,22 @@ TD_REQUIRED = (
 )
 TD_STATUSES = {"draft", "ready", "stale"}
 TD_CASE_STATUSES = {"active", "orphan"}
+TESTDOCS_MD_DIR = "md"
+TESTDOCS_CSV_DIR = "csv"
+
+
+def testdoc_suite_path(root: Path, slug: str) -> Path:
+    return root / "testdocs" / TESTDOCS_MD_DIR / f"{slug}.md"
+
+
+def testdoc_csv_path(root: Path, slug: str) -> Path:
+    return root / "testdocs" / TESTDOCS_CSV_DIR / f"{slug}.csv"
+
+
+def testdoc_csv_for_suite(suite_path: Path) -> Path:
+    return suite_path.parent.parent / TESTDOCS_CSV_DIR / f"{suite_path.stem}.csv"
+
+
 RUN_REQUIRED = (
     "slug",
     "title",
