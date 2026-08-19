@@ -2,6 +2,7 @@
 
 | Slug | Task | Status | Card |
 |------|------|--------|------|
+| task-4827386 | 4827386 | ready | [task-4827386.md](task-4827386.md) |
 | task-4867441 | 4867441 | ready | [task-4867441.md](task-4867441.md) |
 | task-4985417 | 4985417 | ready | [task-4985417.md](task-4985417.md) |
 | task-5199819 | 5199819 | ready | [task-5199819.md](task-5199819.md) |
