@@ -18,7 +18,7 @@ Coordinator and Hunter must not edit these files. Only the `librarian` subagent 
 
 Task snapshots live in `memory/<product-id>/tasks/task-<id>.md` (entity frontmatter plus `task_id`). Requirement cards live in `memory/<product-id>/requirements/task-<id>.md` with requirement fields from the spec. Only librarian writes both.
 
-Testdoc suites live in `memory/<product-id>/testdocs/<slug>.md` with testdoc fields from the spec. Only librarian writes them (via `tools/testdoc_merge.py`). After merge, librarian also writes sibling `testdocs/<slug>.csv` via `tools/testdoc_csv.py`. `testdocs/index.md` is not a card. `*.csv` is not a card.
+Testdoc suites live in `memory/<product-id>/testdocs/md/<slug>.md` with testdoc fields from the spec. Only librarian writes them (via `tools/testdoc_merge.py`). After merge, librarian also writes `testdocs/csv/<slug>.csv` via `tools/testdoc_csv.py`. `testdocs/index.md` is not a card. `*.csv` is not a card.
 
 Run cards live in `memory/<product-id>/runs/<slug>.md` with run fields from the MCP-verification spec. `source` on a run is `browser` | `public` | `internal` | `mixed` | `none`, not the entity-card enum. Only librarian writes them. `runs/index.md` is not a card.
 

@@ -41,7 +41,7 @@ python tools/memory_schema.py memory/<product-id>
 4. Requirement with Figma: `task-<id>.md` records `source_design: figma`, the URL, action→expected-result items, and does not change Upservice.
 5. Requirement without design: the card records `source_design: none`, a design gap, and only requirements supported by the task text.
 6. Requirement repeat: analyzing the same task id merges into the same file and does not create a second slug.
-7. Testdocs from ready requirements: `testdocs/task-<id>.md` has one active case per Testable arrow, a checklist of those ids, sibling `testdocs/task-<id>.csv` with those active rows, schema `OK`; Upservice and Testmo are not called.
+7. Testdocs from ready requirements: `testdocs/md/task-<id>.md` has one active case per Testable arrow, a checklist of those ids, `testdocs/csv/task-<id>.csv` with those active rows, schema `OK`; Upservice and Testmo are not called.
 8. Testdocs without a ready card: stop; `_incoming` stays empty; no testdocs file is created.
 9. Testdocs repeat: same `action`+`expected` keeps the id; new text gets `next_id`; unmatched old cases become `orphan` and drop off the checklist.
 10. Verify from testdocs: `runs/task-<id>.md` has one result per `active` case, schema `OK`; Upservice and Testmo are not called.

@@ -21,7 +21,8 @@ You are the QA swarm Librarian. You are the only writer of canonical memory.
 - `memory/<product-id>/requirements/index.md`
 - `memory/<product-id>/requirements/<slug>.md`
 - `memory/<product-id>/testdocs/index.md`
-- `memory/<product-id>/testdocs/<slug>.md`
+- `memory/<product-id>/testdocs/md/<slug>.md`
+- `memory/<product-id>/testdocs/csv/<slug>.csv`
 - `memory/<product-id>/runs/index.md`
 - `memory/<product-id>/runs/<slug>.md`
 
@@ -52,10 +53,10 @@ If MANIFEST lists `testdocs.md`: do not assign case ids yourself.
 Run (host CLI `py -3` or `python`):
 
 ```
-py -3 tools/testdoc_merge.py --incoming memory/<product-id>/raw/_incoming/testdocs.md --existing memory/<product-id>/testdocs/<slug>.md --output memory/<product-id>/testdocs/<slug>.md
+py -3 tools/testdoc_merge.py --incoming memory/<product-id>/raw/_incoming/testdocs.md --existing memory/<product-id>/testdocs/md/<slug>.md --output memory/<product-id>/testdocs/md/<slug>.md
 ```
 
-Always pass `--existing memory/<product-id>/testdocs/<slug>.md`; `testdoc_merge.py` treats a missing path as an empty suite. `<slug>` is the incoming `slug` (same as the requirement slug). Dedup by slug (merge, never `task-1-2`).
+Always pass `--existing memory/<product-id>/testdocs/md/<slug>.md`; `testdoc_merge.py` treats a missing path as an empty suite. `<slug>` is the incoming `slug` (same as the requirement slug). Dedup by slug (merge, never `task-1-2`).
 
 Then add or update a row in `testdocs/index.md`:
 
@@ -64,18 +65,18 @@ Then add or update a row in `testdocs/index.md`:
 
 | Slug | Task | Status | Active | Card |
 |------|------|--------|--------|------|
-| task-1 | 1 | ready | 3 | [task-1.md](task-1.md) |
+| task-1 | 1 | ready | 3 | [task-1.md](md/task-1.md) |
 ```
 
 `Task` is `task_id` or empty when `none`. `Active` is the number of `status: active` cases.
 
 Then export CSV (do not build rows by hand):
 
-`py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/<slug>.md --output memory/<product-id>/testdocs/<slug>.csv`
+`py -3 tools/testdoc_csv.py --suite memory/<product-id>/testdocs/md/<slug>.md --output memory/<product-id>/testdocs/csv/<slug>.csv`
 
 If the CSV command fails, write nothing further, do not delete `_incoming/`, and report failure.
 
-Keep: Do not call Figma, Upservice, or Testmo. Match `fixtures/demo-testdoc/expected/` for shape (ids, sections, and `task-1.csv`).
+Keep: Do not call Figma, Upservice, or Testmo. Match `fixtures/demo-testdoc/expected/` for shape (ids, sections, and `csv/task-1.csv`).
 
 Do not invent cases or rewrite action/expected.
 
@@ -83,7 +84,7 @@ Do not invent cases or rewrite action/expected.
 
 If MANIFEST lists `run.md`: do not recalculate `verdict`, `channel`, `observed`, or `reason`.
 
-Read incoming frontmatter `slug` / `testdoc`. Open `testdocs/<slug>.md`. If the suite is missing or has no `status: active` case: write nothing canonical, do not consume incoming, report failure.
+Read incoming frontmatter `slug` / `testdoc`. Open `testdocs/md/<slug>.md`. If the suite is missing or has no `status: active` case: write nothing canonical, do not consume incoming, report failure.
 
 Incoming result headings (`### tc-…`) must be exactly the set of `active` ids (no `orphan`, no extras, no missing). Order in the file must be: `active` with `tier: smoke` in checklist order, then remaining `active` in checklist order. If the set or order is wrong: write nothing.
 
