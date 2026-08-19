@@ -343,7 +343,7 @@ def validate_testdoc_csv(suite_path: Path) -> list[str]:
     errors: list[str] = []
     if suite_path.name == "index.md":
         return errors
-    csv_path = suite_path.with_suffix(".csv")
+    csv_path = testdoc_csv_for_suite(suite_path)
     if not csv_path.is_file():
         errors.append(f"{csv_path}: missing testdoc CSV")
         return errors
@@ -590,16 +590,26 @@ def validate_memory_tree(root: Path) -> list[str]:
             errors.extend(validate_requirement_card(card))
     testdocs_dir = root / "testdocs"
     if testdocs_dir.is_dir():
-        suite_stems: set[str] = set()
-        for card in testdocs_dir.glob("*.md"):
-            if card.name == "index.md":
+        for leftover in list(testdocs_dir.glob("*.md")) + list(
+            testdocs_dir.glob("*.csv")
+        ):
+            if leftover.name == "index.md":
                 continue
-            suite_stems.add(card.stem)
-            errors.extend(validate_testdoc_suite(card))
-            errors.extend(validate_testdoc_csv(card))
-        for csv_file in testdocs_dir.glob("*.csv"):
-            if csv_file.stem == "index" or csv_file.stem not in suite_stems:
-                errors.append(f"{csv_file}: csv without testdoc suite")
+            errors.append(f"{leftover}: legacy testdoc path")
+        suite_stems: set[str] = set()
+        md_dir = testdocs_dir / TESTDOCS_MD_DIR
+        if md_dir.is_dir():
+            for card in md_dir.glob("*.md"):
+                if card.name == "index.md":
+                    continue
+                suite_stems.add(card.stem)
+                errors.extend(validate_testdoc_suite(card))
+                errors.extend(validate_testdoc_csv(card))
+        csv_dir = testdocs_dir / TESTDOCS_CSV_DIR
+        if csv_dir.is_dir():
+            for csv_file in csv_dir.glob("*.csv"):
+                if csv_file.stem == "index" or csv_file.stem not in suite_stems:
+                    errors.append(f"{csv_file}: csv without testdoc suite")
     runs_dir = root / "runs"
     if runs_dir.is_dir():
         for card in runs_dir.glob("*.md"):
@@ -607,7 +617,7 @@ def validate_memory_tree(root: Path) -> list[str]:
                 continue
             meta, _body = parse_frontmatter(card.read_text(encoding="utf-8"))
             testdoc_name = meta.get("testdoc", card.stem)
-            testdoc_file = root / "testdocs" / f"{testdoc_name}.md"
+            testdoc_file = testdoc_suite_path(root, testdoc_name)
             testdoc_path = testdoc_file if testdoc_file.is_file() else None
             if testdoc_path is None:
                 relative_testdoc = testdoc_file.relative_to(root).as_posix()

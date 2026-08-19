@@ -4,8 +4,8 @@ import testdoc_csv
 from testdoc_merge import TestdocCase
 
 ROOT = Path(__file__).resolve().parents[1]
-TD_EXPECTED = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.md"
-TD_CSV = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "task-1.csv"
+TD_EXPECTED = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "md" / "task-1.md"
+TD_CSV = ROOT / "fixtures" / "demo-testdoc" / "expected" / "testdocs" / "csv" / "task-1.csv"
 
 
 def test_csv_rows_skip_orphan_and_follow_checklist() -> None:
