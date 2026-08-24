@@ -3,8 +3,27 @@
 | Slug | Task | Status | Card |
 |------|------|--------|------|
 | task-4827386 | 4827386 | ready | [task-4827386.md](task-4827386.md) |
+| task-4827436 | 4827436 | ready | [task-4827436.md](task-4827436.md) |
 | task-4867441 | 4867441 | ready | [task-4867441.md](task-4867441.md) |
+| task-4955794 | 4955794 | ready | [task-4955794.md](task-4955794.md) |
 | task-4985417 | 4985417 | ready | [task-4985417.md](task-4985417.md) |
+| task-4999268 | 4999268 | ready | [task-4999268.md](task-4999268.md) |
+| task-5017199 | 5017199 | ready | [task-5017199.md](task-5017199.md) |
+| task-5017217 | 5017217 | ready | [task-5017217.md](task-5017217.md) |
+| task-5097404 | 5097404 | ready | [task-5097404.md](task-5097404.md) |
+| task-5106553 | 5106553 | ready | [task-5106553.md](task-5106553.md) |
+| task-5126514 | 5126514 | ready | [task-5126514.md](task-5126514.md) |
+| task-5142705 | 5142705 | ready | [task-5142705.md](task-5142705.md) |
+| task-5152936 | 5152936 | ready | [task-5152936.md](task-5152936.md) |
+| task-5168563 | 5168563 | ready | [task-5168563.md](task-5168563.md) |
+| task-5187935 | 5187935 | ready | [task-5187935.md](task-5187935.md) |
+| task-5188533 | 5188533 | ready | [task-5188533.md](task-5188533.md) |
+| task-5199314 | 5199314 | ready | [task-5199314.md](task-5199314.md) |
 | task-5199819 | 5199819 | ready | [task-5199819.md](task-5199819.md) |
 | task-5201511 | 5201511 | ready | [task-5201511.md](task-5201511.md) |
+| task-5204373 | 5204373 | ready | [task-5204373.md](task-5204373.md) |
+| task-5207603 | 5207603 | ready | [task-5207603.md](task-5207603.md) |
 | task-5210629 | 5210629 | ready | [task-5210629.md](task-5210629.md) |
+| task-5217030 | 5217030 | draft | [task-5217030.md](task-5217030.md) |
+| task-5223738 | 5223738 | ready | [task-5223738.md](task-5223738.md) |
+| task-5229812 | 5229812 | ready | [task-5229812.md](task-5229812.md) |
