@@ -4,7 +4,7 @@ Cursor-native QA swarm kernel: map an external product into git memory and answe
 
 ## What this is
 
-Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + `librarian`. Live MCP checks write git runs. Not Playwright. Not a ticket bot.
+Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + `e2e-builder` + `librarian`. Live MCP checks write git `runs/`. Playwright e2e is orchestrated into an external repo (`generate-e2e` → `e2e/` + `e2e-runs/`). Not a ticket bot.
 
 ## Setup
 
@@ -24,11 +24,12 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 - «Проанализируй задачу 1842» → skill `analyze-requirement`
 - «Сделай тест-доки для 1842» → skill `generate-testdocs`
 - «Проверь сюит 1842» → skill `verify-testdocs`
+- «Сделай e2e для 1842» → skill `generate-e2e` (needs `playwright.root` / `root_env` in product config)
 
 ## Checks
 
 ```powershell
-python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py tests/test_get_task_mcp.py tests/test_entity_mcp.py -v
+python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py tests/test_e2e_scan.py tests/test_get_task_mcp.py tests/test_entity_mcp.py -v
 python tools/memory_schema.py fixtures/demo-catalog/expected
 python tools/memory_schema.py memory/<product-id>
 ```
