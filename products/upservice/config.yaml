@@ -12,7 +12,6 @@ testmo:
 #   token_env: INTERNAL_API_TOKEN
 mcp:
   browser: false
-# playwright:
-#   root_env: UPSERVICE_PLAYWRIGHT_ROOT
-#   # root: C:/Users/atsyb/Documents/upservice_playwright_testing
+playwright:
+  root: d:/QA/upservice_playwright_testing
 ttl_hours: 168
