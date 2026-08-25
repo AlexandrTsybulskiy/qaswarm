@@ -67,6 +67,33 @@ RUN_STATUSES = {"ready"}
 RUN_SOURCES = {"browser", "public", "internal", "mixed", "none"}
 RUN_VERDICTS = {"pass", "fail", "blocked", "skipped"}
 RUN_CHANNELS = {"browser", "http", "none"}
+E2E_MAP_REQUIRED = (
+    "slug",
+    "title",
+    "product",
+    "task_id",
+    "testdoc",
+    "status",
+    "fetched_at",
+    "playwright_root",
+)
+E2E_MAP_STATUSES = {"draft", "ready", "stale"}
+E2E_MAP_CHANNEL_CLASSES = {"ui", "api", "unclear"}
+E2E_MAP_CASE_STATUSES = {"mapped", "missing", "written", "out_of_scope"}
+E2E_RUN_REQUIRED = (
+    "slug",
+    "title",
+    "product",
+    "task_id",
+    "testdoc",
+    "status",
+    "fetched_at",
+    "source",
+    "e2e",
+)
+E2E_RUN_STATUSES = {"ready"}
+E2E_RUN_SOURCES = {"playwright"}
+E2E_RUN_VERDICTS = {"pass", "fail", "blocked", "skipped"}
 SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 SECRET_RE = re.compile(
     r"(?i)(?:(?:token|password|secret|api[_-]?key)\s*[:=]\s*"
@@ -560,6 +587,289 @@ def validate_run_card(path: Path, testdoc_path: Path | None = None) -> list[str]
     return errors
 
 
+@dataclass
+class E2eMapCase:
+    case_id: str
+    title: str
+    channel_class: str
+    map_status: str
+    path: str
+    nodeid: str
+    reason: str
+
+
+def parse_e2e_map_cases(body: str) -> list[E2eMapCase]:
+    section = _md_section(body, "Cases")
+    headings = re.findall(r"(?m)^### (\S+)\s*$", section)
+    chunks = re.split(r"(?m)^### .+\n", section)
+    blocks = chunks[1:]
+    cases: list[E2eMapCase] = []
+    for heading, block in zip(headings, blocks, strict=True):
+        fields: dict[str, str] = {}
+        for line in block.splitlines():
+            stripped = line.strip()
+            if not stripped or ":" not in stripped:
+                continue
+            key, raw = stripped.split(":", 1)
+            fields[key.strip()] = raw.strip()
+        cases.append(
+            E2eMapCase(
+                case_id=heading,
+                title=fields.get("title", ""),
+                channel_class=fields.get("channel_class", ""),
+                map_status=fields.get("map_status", ""),
+                path=fields.get("path", ""),
+                nodeid=fields.get("nodeid", ""),
+                reason=fields.get("reason", ""),
+            )
+        )
+    return cases
+
+
+def validate_e2e_map_card(path: Path, testdoc_path: Path | None = None) -> list[str]:
+    errors: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    meta, body = parse_frontmatter(text)
+    for field in E2E_MAP_REQUIRED:
+        if field not in meta or not meta[field]:
+            errors.append(f"{path}: missing {field}")
+    status = meta.get("status", "")
+    if status and status not in E2E_MAP_STATUSES:
+        errors.append(f"{path}: invalid status {status!r}")
+    slug = meta.get("slug", "")
+    if slug and not slug_ok(slug):
+        errors.append(f"{path}: invalid slug {slug!r}")
+    if slug and path.stem != slug:
+        errors.append(f"{path}: filename stem {path.stem!r} != slug {slug!r}")
+    testdoc = meta.get("testdoc", "")
+    if testdoc and not slug_ok(testdoc):
+        errors.append(f"{path}: invalid testdoc {testdoc!r}")
+    if testdoc and slug and testdoc != slug:
+        errors.append(f"{path}: testdoc {testdoc!r} must match slug {slug!r}")
+    task_id = meta.get("task_id", "")
+    if task_id and task_id != "none" and not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
+    if task_id and task_id != "none" and slug and slug != f"task-{task_id}":
+        errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
+    fetched = meta.get("fetched_at")
+    if fetched:
+        try:
+            stamp = datetime.fromisoformat(fetched)
+        except ValueError:
+            errors.append(f"{path}: fetched_at is not ISO-8601")
+        else:
+            if stamp.tzinfo is None or stamp.utcoffset() is None:
+                errors.append(f"{path}: fetched_at must include timezone offset")
+    if _looks_like_secret(text):
+        errors.append(f"{path}: secret-like value in card")
+    if not body.strip():
+        errors.append(f"{path}: empty body")
+    for heading in ("## Cases", "## Gaps"):
+        if not re.search(rf"(?m)^{re.escape(heading)}\s*$", body):
+            errors.append(f"{path}: missing {heading} heading")
+    if not any(
+        "Did not write to Upservice" in line and "Testmo" in line
+        for line in body.splitlines()
+    ):
+        errors.append(f"{path}: missing Did not write to Upservice or Testmo notice")
+    try:
+        cases = parse_e2e_map_cases(body)
+    except ValueError:
+        errors.append(f"{path}: Cases heading count != block count")
+        cases = []
+    for item in cases:
+        if item.channel_class not in E2E_MAP_CHANNEL_CLASSES:
+            errors.append(f"{path}: invalid channel_class {item.channel_class!r}")
+        if item.map_status not in E2E_MAP_CASE_STATUSES:
+            errors.append(f"{path}: invalid map_status {item.map_status!r}")
+        if item.map_status in {"mapped", "written"}:
+            if not item.path:
+                errors.append(f"{path}: case {item.case_id} missing path")
+            if not item.nodeid:
+                errors.append(f"{path}: case {item.case_id} missing nodeid")
+        if item.map_status in {"missing", "out_of_scope"} and not item.reason:
+            errors.append(f"{path}: case {item.case_id} missing reason")
+    by_id = {item.case_id: item for item in cases}
+    if status == "ready":
+        for item in cases:
+            if item.channel_class == "ui" and item.map_status not in {
+                "mapped",
+                "written",
+                "out_of_scope",
+            }:
+                errors.append(
+                    f"{path}: ready map has ui case {item.case_id} with "
+                    f"map_status {item.map_status!r}"
+                )
+            if (
+                item.channel_class == "ui"
+                and item.map_status == "missing"
+            ):
+                errors.append(
+                    f"{path}: ready must not have ui missing case {item.case_id}"
+                )
+    if testdoc_path is not None and testdoc_path.is_file():
+        import testdoc_merge
+
+        td_cases = testdoc_merge.parse_canonical_cases(
+            parse_frontmatter(testdoc_path.read_text(encoding="utf-8"))[1]
+        )
+        active = [c for c in td_cases if c.status == "active" and c.case_id]
+        active_ids = {c.case_id for c in active if c.case_id}
+        if not active_ids.issubset(by_id.keys()):
+            errors.append(f"{path}: map cases must include all testdoc active ids")
+        for case in active:
+            assert case.case_id is not None
+            item = by_id.get(case.case_id)
+            if item is None:
+                continue
+            if item.channel_class == "api" and item.map_status != "out_of_scope":
+                errors.append(
+                    f"{path}: active api {case.case_id} must be out_of_scope"
+                )
+            if status == "ready" and item.channel_class == "ui":
+                if item.map_status not in {"mapped", "written"}:
+                    errors.append(
+                        f"{path}: ready requires ui active {case.case_id} "
+                        f"mapped or written, got {item.map_status!r}"
+                    )
+    return errors
+
+
+@dataclass
+class E2eRunResult:
+    case_id: str
+    verdict: str
+    nodeid: str
+    observed: str
+    reason: str | None = None
+
+
+def parse_e2e_run_summary(body: str) -> dict[str, str]:
+    return parse_run_summary(body)
+
+
+def parse_e2e_run_results(body: str) -> list[E2eRunResult]:
+    section = _md_section(body, "Results")
+    headings = re.findall(r"(?m)^### (\S+)\s*$", section)
+    chunks = re.split(r"(?m)^### .+\n", section)
+    blocks = chunks[1:]
+    results: list[E2eRunResult] = []
+    for heading, block in zip(headings, blocks, strict=True):
+        fields: dict[str, str] = {}
+        for line in block.splitlines():
+            stripped = line.strip()
+            if not stripped or ":" not in stripped:
+                continue
+            key, raw = stripped.split(":", 1)
+            fields[key.strip()] = raw.strip()
+        reason = fields.get("reason")
+        results.append(
+            E2eRunResult(
+                case_id=heading,
+                verdict=fields.get("verdict", ""),
+                nodeid=fields.get("nodeid", ""),
+                observed=fields.get("observed", ""),
+                reason=reason if reason else None,
+            )
+        )
+    return results
+
+
+def validate_e2e_run_card(path: Path, e2e_map_path: Path | None = None) -> list[str]:
+    errors: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    meta, body = parse_frontmatter(text)
+    for field in E2E_RUN_REQUIRED:
+        if field not in meta or not meta[field]:
+            errors.append(f"{path}: missing {field}")
+    status = meta.get("status", "")
+    if status and status not in E2E_RUN_STATUSES:
+        errors.append(f"{path}: invalid status {status!r}")
+    source = meta.get("source", "")
+    if source and source not in E2E_RUN_SOURCES:
+        errors.append(f"{path}: invalid source {source!r}")
+    slug = meta.get("slug", "")
+    if slug and not slug_ok(slug):
+        errors.append(f"{path}: invalid slug {slug!r}")
+    if slug and path.stem != slug:
+        errors.append(f"{path}: filename stem {path.stem!r} != slug {slug!r}")
+    testdoc = meta.get("testdoc", "")
+    if testdoc and not slug_ok(testdoc):
+        errors.append(f"{path}: invalid testdoc {testdoc!r}")
+    if testdoc and slug and testdoc != slug:
+        errors.append(f"{path}: testdoc {testdoc!r} must match slug {slug!r}")
+    e2e = meta.get("e2e", "")
+    if e2e and slug and e2e != slug:
+        errors.append(f"{path}: e2e {e2e!r} must match slug {slug!r}")
+    task_id = meta.get("task_id", "")
+    if task_id and task_id != "none" and not slug_ok(task_id):
+        errors.append(f"{path}: invalid task_id {task_id!r}")
+    if task_id and task_id != "none" and slug and slug != f"task-{task_id}":
+        errors.append(f"{path}: slug {slug!r} must be task-{task_id}")
+    fetched = meta.get("fetched_at")
+    if fetched:
+        try:
+            stamp = datetime.fromisoformat(fetched)
+        except ValueError:
+            errors.append(f"{path}: fetched_at is not ISO-8601")
+        else:
+            if stamp.tzinfo is None or stamp.utcoffset() is None:
+                errors.append(f"{path}: fetched_at must include timezone offset")
+    if _looks_like_secret(text):
+        errors.append(f"{path}: secret-like value in card")
+    if not body.strip():
+        errors.append(f"{path}: empty body")
+    for heading in ("## Summary", "## Results", "## Gaps"):
+        if not re.search(rf"(?m)^{re.escape(heading)}\s*$", body):
+            errors.append(f"{path}: missing {heading} heading")
+    if not any(
+        "Did not write to Upservice" in line and "Testmo" in line
+        for line in body.splitlines()
+    ):
+        errors.append(f"{path}: missing Did not write to Upservice or Testmo notice")
+    summary = parse_e2e_run_summary(body)
+    for key in ("pass", "fail", "blocked", "skipped"):
+        if key not in summary or not re.fullmatch(r"[0-9]+", summary[key]):
+            errors.append(f"{path}: Summary missing integer {key}")
+    try:
+        results = parse_e2e_run_results(body)
+    except ValueError:
+        errors.append(f"{path}: Results heading count != block count")
+        results = []
+    counts = {key: 0 for key in ("pass", "fail", "blocked", "skipped")}
+    for item in results:
+        if item.verdict not in E2E_RUN_VERDICTS:
+            errors.append(f"{path}: invalid verdict {item.verdict!r}")
+        elif item.verdict in counts:
+            counts[item.verdict] += 1
+        if not item.nodeid and item.verdict not in {"skipped", "blocked"}:
+            errors.append(f"{path}: case {item.case_id} missing nodeid")
+        if item.verdict != "skipped" and not item.observed:
+            errors.append(f"{path}: case {item.case_id} missing observed")
+        if item.verdict != "pass" and not item.reason:
+            errors.append(f"{path}: case {item.case_id} missing reason")
+    for key, value in counts.items():
+        raw = summary.get(key)
+        if raw and raw.isdigit() and int(raw) != value:
+            errors.append(f"{path}: Summary {key} {raw} != {value}")
+    if e2e_map_path is not None and e2e_map_path.is_file():
+        map_cases = parse_e2e_map_cases(
+            parse_frontmatter(e2e_map_path.read_text(encoding="utf-8"))[1]
+        )
+        expected_ids = [
+            c.case_id
+            for c in map_cases
+            if c.channel_class == "ui" and c.map_status in {"mapped", "written"}
+        ]
+        got_ids = [item.case_id for item in results]
+        if set(got_ids) != set(expected_ids):
+            errors.append(f"{path}: result ids must equal ui mapped/written ids")
+        elif got_ids != expected_ids:
+            errors.append(f"{path}: result order must follow e2e map checklist")
+    return errors
+
+
 def validate_memory_tree(root: Path) -> list[str]:
     errors: list[str] = []
     index = root / "index.md"
@@ -623,6 +933,26 @@ def validate_memory_tree(root: Path) -> list[str]:
                 relative_testdoc = testdoc_file.relative_to(root).as_posix()
                 errors.append(f"{card}: missing testdoc {relative_testdoc}")
             errors.extend(validate_run_card(card, testdoc_path))
+    e2e_dir = root / "e2e"
+    if e2e_dir.is_dir():
+        for card in e2e_dir.glob("*.md"):
+            if card.name == "index.md":
+                continue
+            meta, _body = parse_frontmatter(card.read_text(encoding="utf-8"))
+            testdoc_name = meta.get("testdoc", card.stem)
+            testdoc_file = testdoc_suite_path(root, testdoc_name)
+            testdoc_path = testdoc_file if testdoc_file.is_file() else None
+            errors.extend(validate_e2e_map_card(card, testdoc_path))
+    e2e_runs_dir = root / "e2e-runs"
+    if e2e_runs_dir.is_dir():
+        for card in e2e_runs_dir.glob("*.md"):
+            if card.name == "index.md":
+                continue
+            meta, _body = parse_frontmatter(card.read_text(encoding="utf-8"))
+            e2e_name = meta.get("e2e", card.stem)
+            e2e_file = root / "e2e" / f"{e2e_name}.md"
+            e2e_map_path = e2e_file if e2e_file.is_file() else None
+            errors.extend(validate_e2e_run_card(card, e2e_map_path))
     return errors
 
 

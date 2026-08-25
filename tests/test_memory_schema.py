@@ -665,3 +665,49 @@ def test_run_empty_result_block_does_not_steal_next_case_fields(tmp_path: Path) 
     errors = memory_schema.validate_run_card(card)
     assert any("tc-1-1" in e and "missing observed" in e for e in errors)
     assert not any("tc-1-2" in e and "missing observed" in e for e in errors)
+
+
+E2E_EXPECTED_MAP = ROOT / "fixtures" / "demo-e2e" / "expected" / "e2e" / "task-1.md"
+E2E_EXPECTED_RUN = ROOT / "fixtures" / "demo-e2e" / "expected" / "e2e-runs" / "task-1.md"
+E2E_TESTDOC = ROOT / "fixtures" / "demo-e2e" / "testdocs" / "task-1.md"
+
+
+def test_demo_catalog_tree_still_valid_without_e2e() -> None:
+    errors = memory_schema.validate_memory_tree(EXPECTED)
+    assert errors == []
+
+
+def test_validate_e2e_map_fixture_ok() -> None:
+    assert memory_schema.validate_e2e_map_card(E2E_EXPECTED_MAP, E2E_TESTDOC) == []
+
+
+def test_validate_e2e_map_ready_requires_ui_closed(tmp_path: Path) -> None:
+    text = E2E_EXPECTED_MAP.read_text(encoding="utf-8").replace(
+        "map_status: mapped", "map_status: missing", 1
+    )
+    # missing requires reason
+    text = text.replace(
+        "### tc-1-1\ntitle: Widget visible\nchannel_class: ui\nmap_status: missing\n"
+        "path: tests/demo/test_widget.py\n"
+        "nodeid: tests/demo/test_widget.py::test_widget_visible\n",
+        "### tc-1-1\ntitle: Widget visible\nchannel_class: ui\nmap_status: missing\n"
+        "reason: not written\n",
+    )
+    card = tmp_path / "task-1.md"
+    card.write_text(text, encoding="utf-8")
+    errors = memory_schema.validate_e2e_map_card(card, E2E_TESTDOC)
+    assert any("ready" in e and ("missing" in e or "mapped or written" in e) for e in errors)
+
+
+def test_validate_e2e_run_fixture_ok() -> None:
+    assert memory_schema.validate_e2e_run_card(E2E_EXPECTED_RUN, E2E_EXPECTED_MAP) == []
+
+
+def test_validate_e2e_run_requires_ui_mapped_ids(tmp_path: Path) -> None:
+    text = E2E_EXPECTED_RUN.read_text(encoding="utf-8").replace(
+        "### tc-1-1\n", "### tc-9-9\n"
+    )
+    card = tmp_path / "task-1.md"
+    card.write_text(text, encoding="utf-8")
+    errors = memory_schema.validate_e2e_run_card(card, E2E_EXPECTED_MAP)
+    assert any("result ids" in e for e in errors)
