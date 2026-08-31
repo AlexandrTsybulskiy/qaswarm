@@ -13,7 +13,11 @@ If `memory/<product-id>/raw/_incoming/` is not empty: stop. Report lock busy. Do
 
 If the testdoc file is missing or has no case with `status: active`: stop. Do not invent cases. Do not fetch the product.
 
-Read `products/<product-id>/config.yaml`. Do not guess `ui.base_url` or API hosts. Do not use Figma URLs as UI. Do not invent credentials. Never write token values.
+Read `products/<product-id>/config.yaml` and resolve the active environment before any HTTP or browser call:
+
+`py -3 tools/product_env.py products/<product-id>`
+
+Use the printed `public_api.base_url`, `ui.base_url`, `ui.email_env`, `ui.password_env`, and `public_api.token_env` (values from `.env`, never echoed). Active env is `UPSERVICE_ENV` in `.env` (`prod` | `stage` | `gold`); per-env overrides use `UPSERVICE_{ENV}_*`. Do not guess hosts. Do not use Figma URLs as UI. Do not invent credentials. Never write token or password values.
 
 Do not edit `runs/`, `testdocs/`, `requirements/`, Upservice, or Testmo.
 

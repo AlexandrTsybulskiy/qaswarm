@@ -11,6 +11,14 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
+from product_config import (
+    load_token,  # re-exported for testmo_mcp and figma_mcp
+    merge_env,
+    parse_product_yaml,
+    resolve_public_api_base_url,
+    resolve_public_api_token,
+)
+
 GET_TIMEOUT = 30.0
 MAX_ATTEMPTS = 6
 MAX_WAIT = 30.0
@@ -35,51 +43,6 @@ def authorization_header(token: str) -> str:
     if value.lower().startswith(prefix):
         return value[len(prefix) :].strip()
     return value
-
-
-def parse_product_yaml(text: str) -> dict[str, Any]:
-    root: dict[str, Any] = {}
-    section: str | None = None
-    for raw in text.splitlines():
-        line = raw.split("#", 1)[0].rstrip()
-        if not line.strip():
-            continue
-        if line[0] not in " \t":
-            section = None
-            key, _, value = line.partition(":")
-            key = key.strip()
-            value = value.strip()
-            if value:
-                root[key] = value
-            else:
-                nested: dict[str, str] = {}
-                root[key] = nested
-                section = key
-            continue
-        if section is None:
-            continue
-        key, _, value = line.strip().partition(":")
-        nested_map = root[section]
-        if isinstance(nested_map, dict):
-            nested_map[key.strip()] = value.strip()
-    return root
-
-
-def load_token(token_env: str, env_file: Path, environ: Mapping[str, str]) -> str | None:
-    value = environ.get(token_env, "").strip()
-    if value:
-        return value
-    if not env_file.is_file():
-        return None
-    for raw in env_file.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, val = line.partition("=")
-        if key.strip() != token_env:
-            continue
-        return val.strip().strip("'").strip('"')
-    return None
 
 
 def urllib_get(
@@ -263,12 +226,16 @@ def public_get(
     public = parsed.get("public_api")
     if not isinstance(public, dict):
         return _error(0, "missing public_api")
-    base_url = str(public.get("base_url", "")).rstrip("/")
     token_env = str(public.get("token_env", "")).strip()
-    if not base_url or not token_env:
+    if not token_env:
         return _error(0, "missing public_api")
 
-    token = load_token(token_env, product_dir / ".env", env)
+    merged_env = merge_env(product_dir / ".env", env)
+    base_url = resolve_public_api_base_url(parsed, merged_env)
+    if not base_url:
+        return _error(0, "missing public_api")
+
+    token, _ = resolve_public_api_token(product_dir, parsed, merged_env)
     if not token:
         return _error(401, "missing token")
 
