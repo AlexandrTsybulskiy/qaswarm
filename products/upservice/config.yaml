@@ -1,9 +1,10 @@
 id: upservice
 name: Upservice
+# Active URLs/token: UPSERVICE_ENV in .env (prod | stage | gold)
 public_api:
   base_url: https://public.upservice.io/
   catalog_hint: /openapi.json
-  token_env: UPSERVICE_PUBLIC_API_TOKEN
+  token_env: UPSERVICE_EMPLOYEE_PUBLIC_API_TOKEN
 testmo:
   base_url: https://softvoya.testmo.net
   token_env: TESTMO_API_KEY

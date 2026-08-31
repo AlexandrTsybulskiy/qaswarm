@@ -14,7 +14,7 @@ Read the task: `product-id`, mode (`index-system` | `recall` | `refresh`), `kind
 
 If `memory/<product-id>/raw/_incoming/` is not empty: stop. Report lock busy. Do not write.
 
-Read `products/<product-id>/config.yaml`. Do not guess base URL.
+Read `products/<product-id>/config.yaml` and resolve active env via `py -3 tools/product_env.py products/<product-id>` (or the same `UPSERVICE_ENV` / `UPSERVICE_{ENV}_*` rules). Do not guess base URL.
 
 ## Channels
 

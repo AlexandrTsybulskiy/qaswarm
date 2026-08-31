@@ -10,6 +10,7 @@ public_api:
 mcp:
   browser: false
 # ui.base_url: https://app.example.com
+# Multi-env (Upservice): UPSERVICE_ENV in .env + UPSERVICE_{ENV}_* overrides; see products/README.md
 # playwright:
 #   root_env: UPSERVICE_PLAYWRIGHT_ROOT
 #   # root: C:/path/to/upservice_playwright_testing
