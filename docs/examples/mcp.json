@@ -1,3 +1,12 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "Framelink MCP for Figma": {
+      "command": "py",
+      "args": ["-3", "tools/figma_mcp/launch.py"]
+    },
+    "testmo": {
+      "command": "py",
+      "args": ["-3", "tools/testmo_mcp/server.py"]
+    }
+  }
 }
