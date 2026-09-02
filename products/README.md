@@ -28,5 +28,13 @@ Workspace employee public API token (one for all envs):
 
 `py -3 tools/product_env.py products/upservice`
 
+## Code repos (multi-root)
+
+Point `code.frontend` and `code.backend` at cloned repos (see `../upservice.code-workspace`):
+
+`py -3 tools/code_roots.py products/upservice`
+
+Optional env overrides: `UPSERVICE_FRONTEND_ROOT`, `UPSERVICE_BACKEND_ROOT` via `code.frontend_env` / `code.backend_env`.
+
 Zero product folders: coordinator must stop and ask for id + public API base URL.
 More than one folder: coordinator must stop and ask which id.

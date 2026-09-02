@@ -8,8 +8,8 @@ description: Builds atomic test cases in git from a ready requirement card. Use 
 ## Steps
 
 1. Resolve the single product id (v1: `upservice` if that is the only folder). If `raw/_incoming/` is not empty, stop.
-2. Find `memory/<id>/requirements/<slug>.md` (ticket id → `task-<id>`). If missing or `status` is not `ready`, stop. Tell the user to run `analyze-requirement` first. Do not start analyst, hunter, or invent Testable text.
-3. Launch `scribe` with the requirement path and the **Atomic cases** rules below. Scribe writes `_incoming/testdocs.md` without case ids. Case `title` must match the language of `action`/`expected` (Russian for Upservice Testable). No Figma, no product API, no Testmo.
+2. Find `memory/<id>/requirements/<slug>.md` (ticket id → `task-<id>`). If missing or `status` is not `ready`, stop. Tell the user to run `analyze-requirement` first. Do not start specifier, hunter, or invent Testable text.
+3. Launch `specifier` with `mode: testdocs`, the requirement path, and the **Atomic cases** rules below. If the Task harness has no `specifier` type, use `generalPurpose` instructed to follow `.cursor/agents/specifier.md` verbatim with `mode: testdocs`. Specifier writes `_incoming/testdocs.md` without case ids. Case `title` must match the language of `action`/`expected` (Russian for Upservice Testable). No Figma, no product API, no Testmo.
 4. After MANIFEST lists `testdocs.md`, launch `librarian` with goal `testdoc`. Librarian runs `tools/testdoc_merge.py` (writes `testdocs/md/<slug>.md`) then `tools/testdoc_csv.py` (writes `testdocs/csv/<slug>.csv`).
 5. Report the suite path, CSV path, active count, orphan count, and gaps. Say testdocs are ready only if both files exist and `py -3 tools/memory_schema.py memory/<id>` would pass.
 6. Never write to Upservice or Testmo. Do not use browser MCP or Figma MCP.
@@ -48,7 +48,7 @@ description: Builds atomic test cases in git from a ready requirement card. Use 
 
 ### Ревизия сьюта
 
-Если сьют уже есть и пользователь просит атомарность (или координатор видит составные кейсы): scribe пишет **полный** incoming со всеми атомарными кейсами; librarian merge с `--existing` — старые составные id становятся `orphan`, новые получают новые id. В checklist только `active`.
+Если сьют уже есть и пользователь просит атомарность (или координатор видит составные кейсы): specifier пишет **полный** incoming со всеми атомарными кейсами; librarian merge с `--existing` — старые составные id становятся `orphan`, новые получают новые id. В checklist только `active`.
 
 ### Не разбивать без нужды
 

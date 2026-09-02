@@ -1,0 +1,42 @@
+---
+description: How QA swarm agents read Upservice frontend/backend code repos
+alwaysApply: true
+---
+
+# Code repositories
+
+Product source code lives **outside** `memory/`. Resolve roots from config — do not guess paths:
+
+`py -3 tools/code_roots.py products/<product-id>`
+
+Config block: `products/<product-id>/config.yaml` → `code.frontend`, `code.backend` (optional `*_env` overrides).
+
+## Layout (Upservice)
+
+| Repo | Typical search roots | Notes |
+|------|---------------------|-------|
+| frontend | `src/components/`, `src/store/`, `src/services/`, `src/hooks/` | React; UI strings often Russian |
+| backend | `apps/<domain>/`, `apps/public_api/` | Django apps; REST under `public_api` |
+| playwright | `playwright.root` in config | e2e-builder writes tests here only |
+
+## Rules
+
+- **Read-only** for coordinator, hunter, specifier, verifier, tracer, librarian. Only **e2e-builder** edits the Playwright repo.
+- Do not copy secrets, `.env`, tokens, or credentials from code into `memory/` or chat.
+- Cite findings as `repo:relative/path:line` (e.g. `backend:apps/tasks/views.py:42`).
+- Prefer `memory/<id>/requirements/` and `entities/` for *what* to verify; use code repos for *where* it is implemented.
+- Search in Russian **and** English (UI labels vs code identifiers).
+- API paths from `catalog/api.md` often map to `apps/public_api/` or domain app views/serializers.
+- If a root is `(missing)`, stop code search and tell the human to fix `config.yaml` or open `upservice.code-workspace`.
+
+## When to search code
+
+| Agent / skill | Use code repos when |
+|---------------|---------------------|
+| `trace-code` | User asks where/how something is implemented or to compare code vs requirement |
+| `specifier` (`requirement` / `full`) | Optional: add `## Implementation hints` with unverified paths |
+| `e2e-builder` | Before writing UI tests: find components, `data-qa`, routes in frontend |
+| `verifier` | When UI case is `blocked`: optional hint in run `## Gaps` (do not fail on missing code) |
+| `recall` | After memory miss on API entity: optional cross-check in `public_api` code |
+
+Do not index the full codebase into `memory/`. Point reads and targeted grep only.

@@ -15,4 +15,8 @@ mcp:
   browser: false
 playwright:
   root: d:/QA/upservice_playwright_testing
+# Paths for multi-root workspace (upservice.code-workspace). Adjust to your clones.
+code:
+  frontend: d:/QA/upservice-frontend
+  backend: d:/QA/upservice-backend
 ttl_hours: 168

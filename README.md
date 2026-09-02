@@ -4,7 +4,7 @@ Cursor-native QA swarm kernel: map an external product into git memory and answe
 
 ## What this is
 
-Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + `e2e-builder` + `librarian`. Live MCP checks write git `runs/`. Playwright e2e is orchestrated into an external repo (`generate-e2e` → `e2e/` + `e2e-runs/`). Not a ticket bot.
+Coordinator (this repo's chat) + `hunter` + `specifier` + `verifier` + `e2e-builder` + `librarian`. Live MCP checks write git `runs/`. Playwright e2e is orchestrated into an external repo (`generate-e2e` → `e2e/` + `e2e-runs/`). Not a ticket bot.
 
 ## Setup
 
@@ -12,7 +12,7 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 2. `python -m pip install pytest ruff`
 3. Copy `docs/examples/product-config.yaml` to `products/<product-id>/config.yaml`
 4. Put API tokens in `products/<product-id>/.env` or Cursor MCP. Never commit them.
-5. Open this folder as the Cursor workspace.
+5. Open `../upservice.code-workspace` (multi-root: qaswarm + frontend + backend + playwright) or this folder alone.
 6. Connect Figma MCP in Cursor to analyze task design links.
 7. Copy `docs/examples/mcp.json` into `.cursor/mcp.json` (gitignored) so Hunter can call Upservice GET MCP tools (`get_task`, `get_project`, `list_employees`, …). Reload MCP in Cursor. Token stays in `products/upservice/.env`, not in mcp.json.
 
@@ -22,14 +22,16 @@ Coordinator (this repo's chat) + `hunter` + `analyst` + `scribe` + `verifier` + 
 - A question about an entity → `recall`
 - «Обнови user» → `refresh`
 - «Проанализируй задачу 1842» → skill `analyze-requirement`
+- «Разбери задачу 1842 и сделай кейсы» → skill `analyze-and-testdocs`
 - «Сделай тест-доки для 1842» → skill `generate-testdocs`
 - «Проверь сюит 1842» → skill `verify-testdocs`
 - «Сделай e2e для 1842» → skill `generate-e2e` (needs `playwright.root` / `root_env` in product config)
+- «Где в коде скоринг лида» / «сверь task-1842 с кодом» → skill `trace-code` (needs `code.frontend` / `code.backend` in product config)
 
 ## Checks
 
 ```powershell
-python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py tests/test_e2e_scan.py tests/test_get_task_mcp.py tests/test_entity_mcp.py -v
+python -m pytest tests/test_memory_schema.py tests/test_testdoc_merge.py tests/test_testdoc_csv.py tests/test_e2e_scan.py tests/test_code_roots.py tests/test_get_task_mcp.py tests/test_entity_mcp.py -v
 python tools/memory_schema.py fixtures/demo-catalog/expected
 python tools/memory_schema.py memory/<product-id>
 ```
