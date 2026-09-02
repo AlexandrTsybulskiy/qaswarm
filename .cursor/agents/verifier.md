@@ -19,6 +19,8 @@ Read `products/<product-id>/config.yaml` and resolve the active environment befo
 
 Use the printed `public_api.base_url`, `ui.base_url`, `ui.email_env`, `ui.password_env`, and `public_api.token_env` (values from `.env`, never echoed). Active env is `UPSERVICE_ENV` in `.env` (`prod` | `stage` | `gold`); per-env overrides use `UPSERVICE_{ENV}_*`. Do not guess hosts. Do not use Figma URLs as UI. Do not invent credentials. Never write token or password values.
 
+When UI cases end `blocked` and `py -3 tools/code_roots.py products/<product-id>` shows `(ok)` frontend, you may add one optional line under `## Gaps` pointing to likely `frontend:src/...` paths (read-only grep). Do not edit product repos.
+
 Do not edit `runs/`, `testdocs/`, `requirements/`, Upservice, or Testmo.
 
 ## Cases

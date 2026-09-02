@@ -5,16 +5,16 @@ This workspace is the QA swarm kernel: remember an external product in git and a
 ## Roles
 
 - You (this chat) are the coordinator. Follow `.cursor/rules/coordinator.mdc`.
-- `hunter` fetches. Output only `memory/<id>/raw/_incoming/`.
-- `analyst` reads a task snapshot and Figma. Draft only in `_incoming/requirement.md`.
-- `scribe` reads a ready requirement card. Draft only in `_incoming/testdocs.md`.
+- `hunter` fetches product catalog and entity targets (`index-system`, `recall`, `refresh`). Output only `memory/<id>/raw/_incoming/`.
+- `specifier` drafts `_incoming/requirement.md` and/or `_incoming/testdocs.md` (`mode: requirement` | `testdocs` | `full`). Fetches one Upservice task when needed (`requirement`/`full`). Uses `get_task` and Figma MCP in requirement modes only.
 - `verifier` executes one testdoc suite via browser MCP or HTTP. Draft only in `_incoming/run.md`.
 - `e2e-builder` maps/writes/runs Playwright UI tests in an external repo. Draft only in `_incoming/e2e.md` and `_incoming/e2e-run.md`.
+- `tracer` searches frontend/backend repos (read-only). Draft only in `_incoming/code-trace.md`.
 - `librarian` writes canonical memory. Never calls the product.
 
 ## Do not do in v1
 
-Writing tickets; a Playwright suite inside this repo; full API dumps; scheduled reindex; RAG; guessing product URLs. Orchestrated `generate-e2e` against an external Playwright root is allowed.
+Writing tickets; a Playwright suite inside this repo; full API dumps; scheduled reindex; RAG; guessing product URLs. Orchestrated `generate-e2e` against an external Playwright root is allowed. Full codebase index into `memory/` is not allowed — use `trace-code` for targeted paths.
 
 ## Spec
 
