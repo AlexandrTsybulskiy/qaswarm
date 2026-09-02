@@ -7,7 +7,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from upservice_mcp.client import (
+from upservice_public_api.client import (
     _decode_body,
     _error,
     _normalize_body,

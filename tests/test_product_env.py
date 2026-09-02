@@ -11,7 +11,7 @@ from product_config import (
     resolve_ui_base_url,
     resolve_ui_credentials,
 )
-from upservice_mcp import client as utc
+from upservice_public_api import client as utc
 
 CONFIG = """id: upservice
 name: Upservice

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from product_config import (
-    load_token,  # re-exported for testmo_mcp and figma_mcp
+    load_token,  # noqa: F401  # re-exported for testmo_mcp and figma_mcp
     merge_env,
     parse_product_yaml,
     resolve_public_api_base_url,

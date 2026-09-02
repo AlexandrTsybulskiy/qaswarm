@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import get_type_hints
 
 import pytest
 
-from upservice_mcp import client as utc
-from upservice_mcp import server as ums
+from upservice_public_api import client as utc
+from upservice_public_api import get as upg
 
 CONFIG = """id: upservice
 name: Upservice
@@ -354,56 +351,51 @@ def test_404_still_single_get_after_retry_logic(tmp_path: Path) -> None:
     assert calls["n"] == 1
 
 
-def test_server_get_task_uses_repo_products(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_cli_task_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
+    calls: list[str] = []
+
+    def fake_public_get(
+        path: str, *, products_root: Path, query: object = None, **kwargs: object
+    ) -> dict[str, object]:
+        calls.append(path)
+        assert products_root == products
+        return {"status_code": 200, "body": {"id": 1}}
+
+    monkeypatch.setattr(upg.client, "public_get", fake_public_get)
+    result = upg.run("/v1/tasks/1", products_root=products)
+    assert result == {"status_code": 200, "body": {"id": 1}}
+    assert calls == ["/v1/tasks/1"]
+
+
+def test_get_cli_list_query(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     seen: dict[str, object] = {}
 
-    def fake_get_task(
-        task_id: str | int, *, products_root: Path, **kwargs: object
+    def fake_public_get(
+        path: str, *, products_root: Path, query: object = None, **kwargs: object
     ) -> dict[str, object]:
-        seen["task_id"] = task_id
-        seen["products_root"] = products_root
-        return {"status_code": 200, "body": {"id": int(task_id)}}
+        seen["path"] = path
+        seen["query"] = query
+        return {"status_code": 200, "body": {"count": 0, "results": []}}
 
-    monkeypatch.setattr(ums.client, "get_task", fake_get_task)
-    result = ums.get_task("5201511")
-    assert result == {"status_code": 200, "body": {"id": 5201511}}
-    assert seen["task_id"] == "5201511"
-    assert seen["products_root"] == ums.REPO_ROOT / "products"
-
-
-def test_server_get_task_accepts_numeric_task_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    seen: dict[str, object] = {}
-
-    def fake_get_task(
-        task_id: str | int, *, products_root: Path, **kwargs: object
-    ) -> dict[str, object]:
-        seen["task_id"] = task_id
-        return {"status_code": 200, "body": {"id": task_id}}
-
-    monkeypatch.setattr(ums.client, "get_task", fake_get_task)
-    result = ums.get_task(5201511)
-
-    assert result == {"status_code": 200, "body": {"id": 5201511}}
-    assert seen["task_id"] == 5201511
-    assert get_type_hints(ums.get_task)["task_id"] == str | int
-
-
-def test_server_script_imports_without_tools_on_sys_path() -> None:
-    code = (
-        "import runpy, sys; "
-        "sys.path = [x for x in sys.path if not x.endswith('tools')]; "
-        "runpy.run_path('tools/upservice_mcp/server.py', run_name='not_main')"
+    monkeypatch.setattr(upg.client, "public_get", fake_public_get)
+    result = upg.run(
+        "/v1/projects",
+        ["--limit", "25", "--status", "active", "--status", "completed"],
+        products_root=products,
     )
+    assert result["status_code"] == 200
+    assert seen["path"] == "/v1/projects"
+    assert seen["query"] == {
+        "limit": "25",
+        "status": ["active", "completed"],
+    }
 
-    result = subprocess.run(
-        [sys.executable, "-c", code],
-        cwd=ums.REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
 
-    assert result.returncode == 0, result.stderr
+def test_get_cli_invalid_query_key() -> None:
+    with pytest.raises(ValueError, match="invalid query key"):
+        upg.parse_query_args(["--a/b", "x"])
 
 
 def test_public_get_rejects_query_in_path(tmp_path: Path) -> None:

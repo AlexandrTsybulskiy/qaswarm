@@ -25,7 +25,7 @@ For analyze-requirement: launch `specifier` (`mode: requirement`); librarian wri
 
 For analyze-and-testdocs: launch `specifier` (`mode: full`); librarian writes task snapshot (if fetched), requirements, and testdocs when listed in MANIFEST. Do not write to the product or Testmo.
 
-If Hunter or Specifier reports the MCP tool `get_task` or another Upservice entity GET/list tool (`get_project`, `get_sprint`, `get_directory`, `get_directory_record`, `list_tasks`, `list_projects`, `list_sprints`, `list_employees`, `list_tags`, `list_directories`, `list_directory_records`) is missing: do not launch a second hunter and do not tell it to guess the public URL. Tell the human to copy `docs/examples/mcp.json` into `.cursor/mcp.json` and reload MCP. Token stays in `products/upservice/.env`. Do not stop `index-system` OpenAPI catalog discovery.
+If Hunter or Specifier reports the Upservice public API CLI (`tools/upservice_public_api/get.py`) is missing or returns missing token (`status_code` 401/0): do not launch a second hunter and do not tell it to guess the public URL. Tell the human to fix `products/upservice/.env` (`public_api.token_env`). Do not stop `index-system` OpenAPI catalog discovery.
 
 For generate-testdocs: only if `requirements/<slug>.md` is `ready`; specifier (`mode: testdocs`) drafts `_incoming/testdocs.md` (case titles in the same language as action/expected; Russian for Upservice); librarian writes `testdocs/` via the merge helper and `testdoc_csv.py`. Do not start analyze-requirement from this skill. Do not write to the product or Testmo.
 
