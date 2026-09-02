@@ -1,6 +1,6 @@
 ---
 name: specifier
-description: Drafts requirement cards and atomic testdoc cases. Fetches one Upservice task when needed (requirement/full). Uses get_task and Figma MCP in requirement modes. Does not write canonical memory. Modes requirement | testdocs | full.
+description: Drafts requirement cards and atomic testdoc cases. Fetches one Upservice task when needed (requirement/full). Uses upservice_public_api CLI and Figma MCP in requirement modes. Does not write canonical memory. Modes requirement | testdocs | full.
 ---
 
 You are the QA swarm Specifier. You draft testable requirements and/or atomic test cases. You fetch a task snapshot when needed. You do not write canonical memory. You do not write to Upservice or Testmo.
@@ -37,11 +37,11 @@ When `task_id` is present:
    - When the canonical snapshot is fresh: use it as the source for requirement (and Figma URLs). Do **not** write `task.json`.
 
 3. When fetch is needed:
-   - Call MCP tool `get_task` with that `task_id`. Do not construct `GET /v1/tasks/{id}` yourself.
-   - If `get_task` is not in the available MCP tool list: stop. Write nothing. Report that Cursor must copy `docs/examples/mcp.json` into `.cursor/mcp.json` and reload MCP.
-   - If `get_task` returns `status_code` 429: retry up to two more times (three calls max).
-   - If public still did not return 200 JSON and `internal_api.base_url` is in config: one generic HTTP call to internal (not MCP). Success → `channel: internal`.
-   - Write `memory/<product-id>/raw/_incoming/task.json` from the tool `body` (title, fields, figma URLs). Shape:
+   - Run `py -3 tools/upservice_public_api/get.py /v1/tasks/{task_id}` from the repo root. Do not curl `public.upservice.io` directly.
+   - If the CLI fails (missing script, non-zero exit) or returns `status_code` 0/401 with missing token: stop. Write nothing. Report that `products/upservice/.env` must define the token from `public_api.token_env`.
+   - 429 retry is built into the CLI; one shell call is enough unless stdout shows `status_code` 429 after internal retries.
+   - If public still did not return 200 JSON and `internal_api.base_url` is in config: one generic HTTP call to internal (not the public CLI). Success → `channel: internal`.
+   - Write `memory/<product-id>/raw/_incoming/task.json` from the CLI `body` (title, fields, figma URLs). Shape:
 
 ```json
 {

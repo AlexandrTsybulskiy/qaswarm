@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import get_type_hints
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from upservice_mcp import client as utc
-from upservice_mcp import server as ums
+from upservice_public_api import client as utc
+from upservice_public_api import get as upg
 
 CONFIG = """id: upservice
 name: Upservice
@@ -235,48 +234,42 @@ def test_list_projects_invalid_query_skips_http(tmp_path: Path) -> None:
     assert called["n"] == 0
 
 
-def test_server_get_project_uses_repo_products(monkeypatch: pytest.MonkeyPatch) -> None:
-    seen: dict[str, object] = {}
+def test_get_cli_project_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
+    calls: list[str] = []
 
-    def fake_get_project(
-        project_id: str | int, *, products_root: Path, **kwargs: object
+    def fake_public_get(
+        path: str, *, products_root: Path, query: object = None, **kwargs: object
     ) -> dict[str, object]:
-        seen["project_id"] = project_id
-        seen["products_root"] = products_root
-        return {"status_code": 200, "body": {"id": int(project_id)}}
+        calls.append(path)
+        return {"status_code": 200, "body": {"id": 12}}
 
-    monkeypatch.setattr(ums.client, "get_project", fake_get_project)
-    result = ums.get_project("12")
+    monkeypatch.setattr(upg.client, "public_get", fake_public_get)
+    result = upg.run("/v1/projects/12", products_root=products)
     assert result == {"status_code": 200, "body": {"id": 12}}
-    assert seen["project_id"] == "12"
-    assert seen["products_root"] == ums.REPO_ROOT / "products"
-    assert get_type_hints(ums.get_project)["project_id"] == str | int
+    assert calls == ["/v1/projects/12"]
 
 
-def test_server_list_projects_passes_query(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_cli_list_projects_query(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    products = _product_root(tmp_path, env=f"UPSERVICE_PUBLIC_API_TOKEN={TOKEN}\n")
     seen: dict[str, object] = {}
 
-    def fake_list_projects(
-        *,
-        limit: int | None = None,
-        offset: int | None = None,
-        query: dict | None = None,
-        products_root: Path,
-        **kwargs: object,
+    def fake_public_get(
+        path: str, *, products_root: Path, query: object = None, **kwargs: object
     ) -> dict[str, object]:
-        seen["limit"] = limit
-        seen["offset"] = offset
+        seen["path"] = path
         seen["query"] = query
-        seen["products_root"] = products_root
         return {"status_code": 200, "body": {"count": 0, "results": []}}
 
-    monkeypatch.setattr(ums.client, "list_projects", fake_list_projects)
-    result = ums.list_projects(limit=25, offset=0, query={"status": "active"})
+    monkeypatch.setattr(upg.client, "public_get", fake_public_get)
+    result = upg.run(
+        "/v1/projects",
+        ["--limit", "25", "--offset", "0", "--status", "active"],
+        products_root=products,
+    )
     assert result["status_code"] == 200
-    assert seen["limit"] == 25
-    assert seen["offset"] == 0
-    assert seen["query"] == {"status": "active"}
-    assert seen["products_root"] == ums.REPO_ROOT / "products"
+    assert seen["path"] == "/v1/projects"
+    assert seen["query"] == {"limit": "25", "offset": "0", "status": "active"}
 
 
 

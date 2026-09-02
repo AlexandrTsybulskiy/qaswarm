@@ -11,10 +11,10 @@ Coordinator (this repo's chat) + `hunter` + `specifier` + `verifier` + `e2e-buil
 1. Python 3.11+
 2. `python -m pip install pytest ruff`
 3. Copy `docs/examples/product-config.yaml` to `products/<product-id>/config.yaml`
-4. Put API tokens in `products/<product-id>/.env` or Cursor MCP. Never commit them.
+4. Put API tokens in `products/<product-id>/.env`. Never commit them.
 5. Open `../upservice.code-workspace` (multi-root: qaswarm + frontend + backend + playwright) or this folder alone.
 6. Connect Figma MCP in Cursor to analyze task design links.
-7. Copy `docs/examples/mcp.json` into `.cursor/mcp.json` (gitignored) so Hunter can call Upservice GET MCP tools (`get_task`, `get_project`, `list_employees`, …). Reload MCP in Cursor. Token stays in `products/upservice/.env`, not in mcp.json.
+7. Upservice public GET: agents run `py -3 tools/upservice_public_api/get.py /v1/...` (token in `products/upservice/.env`). Optional: Figma/Testmo MCP via `.cursor/mcp.json` — see `docs/examples/mcp.json`.
 
 ## Commands (natural language)
 

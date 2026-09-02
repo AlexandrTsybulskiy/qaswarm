@@ -37,28 +37,26 @@ Use `public_api.catalog_hint` relative to `public_api.base_url`. If `unknown`, t
 
 Do not invent resources. Map only paths the catalog actually returned. Do not dump all records; this is a map: path, methods, title, short summary.
 
-Call APIs with Cursor HTTP/MCP tools. The only HTTP client in this repo is GET inside `tools/upservice_mcp/` for the public GET MCP tools. Use `token_env` names; never write token values into files.
+Call Upservice public GET paths via the repo CLI. The only HTTP client in this repo is GET inside `tools/upservice_public_api/`. Use `token_env` names; never write token values into files.
 
-For public GET of these paths, call the named MCP tool. Do not construct the URL:
+For public GET, run from the repo root (429 retry is built into the CLI; one call is enough). Do not curl `public.upservice.io` directly:
 
-- GET `/v1/tasks/{id}` → `get_task`
-- GET `/v1/projects/{id}` → `get_project`
-- GET `/v1/sprints/{id}` → `get_sprint`
-- GET `/v1/directories/{id}` → `get_directory`
-- GET `/v1/directory-records/{id}` → `get_directory_record`
-- GET `/v1/tasks` → `list_tasks`
-- GET `/v1/projects` → `list_projects`
-- GET `/v1/sprints` → `list_sprints`
-- GET `/v1/employees` → `list_employees`
-- GET `/v1/tags` → `list_tags`
-- GET `/v1/directories` → `list_directories`
-- GET `/v1/directory-records` → `list_directory_records`
+- GET `/v1/tasks/{id}` → `py -3 tools/upservice_public_api/get.py /v1/tasks/{id}`
+- GET `/v1/projects/{id}` → `py -3 tools/upservice_public_api/get.py /v1/projects/{id}`
+- GET `/v1/sprints/{id}` → `py -3 tools/upservice_public_api/get.py /v1/sprints/{id}`
+- GET `/v1/directories/{id}` → `py -3 tools/upservice_public_api/get.py /v1/directories/{id}`
+- GET `/v1/directory-records/{id}` → `py -3 tools/upservice_public_api/get.py /v1/directory-records/{id}`
+- GET `/v1/tasks` → `py -3 tools/upservice_public_api/get.py /v1/tasks --limit 25` (add query flags as needed)
+- GET `/v1/projects` → `py -3 tools/upservice_public_api/get.py /v1/projects ...`
+- GET `/v1/sprints` → `py -3 tools/upservice_public_api/get.py /v1/sprints ...`
+- GET `/v1/employees` → `py -3 tools/upservice_public_api/get.py /v1/employees ...`
+- GET `/v1/tags` → `py -3 tools/upservice_public_api/get.py /v1/tags ...`
+- GET `/v1/directories` → `py -3 tools/upservice_public_api/get.py /v1/directories ...`
+- GET `/v1/directory-records` → `py -3 tools/upservice_public_api/get.py /v1/directory-records ...`
 
-If that tool is not in the available MCP tool list: do not guess the public path. Report that Cursor must copy `docs/examples/mcp.json` into `.cursor/mcp.json` and reload MCP. Do not stop `index-system` catalog discovery via `catalog_hint` / OpenAPI.
+Parse stdout JSON `{status_code, body}`. If `status_code` is 0 or 401 with missing token: report that `products/upservice/.env` must define the token from `public_api.token_env`. Do not stop `index-system` catalog discovery via `catalog_hint` / OpenAPI.
 
-If the tool returns `status_code` 429: call it again with the same arguments, up to two more times (three tool calls max). 429 is not "missing".
-
-There is no `get_employee` or `get_tag`. There are no MCP tools for channels, files, or external-channels.
+There is no GET-by-id for employees or tags. There is no CLI coverage for channels, files, or external-channels.
 
 ## Output
 

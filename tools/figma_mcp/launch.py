@@ -11,7 +11,7 @@ TOOLS_ROOT = Path(__file__).resolve().parents[1]
 if str(TOOLS_ROOT) not in sys.path:
     sys.path.insert(0, str(TOOLS_ROOT))
 
-from upservice_mcp.client import load_token  # noqa: E402
+from upservice_public_api.client import load_token  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ENV_FILE = REPO_ROOT / "products" / "upservice" / ".env"
