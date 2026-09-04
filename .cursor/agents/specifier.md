@@ -100,7 +100,7 @@ Do not assign `tc-…` ids.
 
 ### Atomic cases
 
-Follow **Atomic cases** in `.cursor/skills/generate-testdocs/SKILL.md`. Read only `## Testable` on the requirement.
+Follow **Atomic cases** and **Порядок кейсов (smoke → глубокие)** in `.cursor/skills/generate-testdocs/SKILL.md`. Read only `## Testable` on the requirement.
 
 **Один кейс = одна проверка.**
 
@@ -120,7 +120,7 @@ Write `memory/<product-id>/raw/_incoming/testdocs.md` using `fixtures/demo-testd
 
 Frontmatter: `slug`, `title`, `product`, `task_id`, `requirement`, `fetched_at` (ISO-8601 with offset, copy from the requirement). No `status`, no `next_id`.
 
-Body: `## Cases` with `### case` sections (`title`, `action`, `expected` only), then `## Gaps`.
+Body: `## Cases` with `### case` sections. Fields: `title`, `action`, `expected`; optional `tier: smoke` on smoke cases. Order: all smoke first, then deeper cases (no `tier`). Then `## Gaps`.
 
 ## MANIFEST
 

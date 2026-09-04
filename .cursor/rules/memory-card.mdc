@@ -24,6 +24,6 @@ Testdoc suites live in `memory/<product-id>/testdocs/md/<slug>.md` with testdoc 
 
 Run cards live in `memory/<product-id>/runs/<slug>.md` with run fields from the MCP-verification spec. `source` on a run is `browser` | `public` | `internal` | `mixed` | `none`, not the entity-card enum. Only librarian writes them. `runs/index.md` is not a card.
 
-E2e mapping cards live in `memory/<product-id>/e2e/<slug>.md` (Playwright contour). E2e run cards live in `memory/<product-id>/e2e-runs/<slug>.md` with `source: playwright`. Only librarian writes them. `e2e/index.md` and `e2e-runs/index.md` are not cards.
+E2e mapping cards live in `memory/<product-id>/e2e/<slug>.md` (Playwright contour). E2e run cards live in `memory/<product-id>/e2e-runs/<slug>.md` with `source: playwright`. Only librarian writes them. `e2e/index.md` and `e2e-runs/index.md` are not cards. Body should include `## Cases` and `## Gaps`; record implementation decisions and `map_status: missing` reasons in Gaps (see `.cursor/reference/e2e-gaps-patterns.md`).
 
 Validate with: `python tools/memory_schema.py memory/<product-id>`

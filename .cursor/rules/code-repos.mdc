@@ -29,13 +29,27 @@ Config block: `products/<product-id>/config.yaml` → `code.frontend`, `code.bac
 - API paths from `catalog/api.md` often map to `apps/public_api/` or domain app views/serializers.
 - If a root is `(missing)`, stop code search and tell the human to fix `config.yaml` or open `upservice.code-workspace`.
 
+## Sync before implementation lookup
+
+When the human asks how/where something is implemented on the **client** and/or **server** (`trace-code`, «посмотри как реализовано», «найди в коде», compare code vs requirement):
+
+1. Resolve roots via `code_roots.py`.
+2. **Before any grep/read** in those product repos, sync only the roots you will search:
+   - `git fetch origin`
+   - `git pull --ff-only` on the checked-out tracking branch (usually `develop`)
+   - On Windows, if checkout fails with `Filename too long`, retry with `git -c core.longpaths=true …` (do not change global git config unless the human asks).
+3. If the working tree is dirty, ff-only fails, or unexpected local changes block pull: **stop**, report status, ask how to proceed. Do **not** `reset --hard` / discard work unless the human explicitly chooses that.
+4. After a successful sync, briefly note the tip commit(s), then search.
+
+Do not sync the Playwright repo for this rule. Do not sync on unrelated memory/recall questions.
+
 ## When to search code
 
 | Agent / skill | Use code repos when |
 |---------------|---------------------|
 | `trace-code` | User asks where/how something is implemented or to compare code vs requirement |
 | `specifier` (`requirement` / `full`) | Optional: add `## Implementation hints` with unverified paths |
-| `e2e-builder` | Before writing UI tests: find components, `data-qa`, routes in frontend |
+| `e2e-builder` | Before writing UI tests: find components, `data-qa`, routes in frontend; read `<playwright.root>/.cursor/reference/` and skills in playwright repo — conventions stay there, gaps documented in qaswarm `e2e/` cards |
 | `verifier` | When UI case is `blocked`: optional hint in run `## Gaps` (do not fail on missing code) |
 | `recall` | After memory miss on API entity: optional cross-check in `public_api` code |
 
