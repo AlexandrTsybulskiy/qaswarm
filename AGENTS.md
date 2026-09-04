@@ -8,7 +8,7 @@ This workspace is the QA swarm kernel: remember an external product in git and a
 - `hunter` fetches product catalog and entity targets (`index-system`, `recall`, `refresh`). Output only `memory/<id>/raw/_incoming/`.
 - `specifier` drafts `_incoming/requirement.md` and/or `_incoming/testdocs.md` (`mode: requirement` | `testdocs` | `full`). Fetches one Upservice task when needed (`requirement`/`full`). Uses `get_task` and Figma MCP in requirement modes only.
 - `verifier` executes one testdoc suite via browser MCP or HTTP. Draft only in `_incoming/run.md`.
-- `e2e-builder` maps/writes/runs Playwright UI tests in an external repo. Draft only in `_incoming/e2e.md` and `_incoming/e2e-run.md`.
+- `e2e-builder` maps/writes/runs Playwright UI tests in an external repo. Draft only in `_incoming/e2e.md` and `_incoming/e2e-run.md`. Gap patterns: `.cursor/reference/e2e-gaps-patterns.md`; Virtuoso scroll stays in playwright `.cursor/reference/virtuoso-scroll.md`.
 - `tracer` searches frontend/backend repos (read-only). Draft only in `_incoming/code-trace.md`.
 - `librarian` writes canonical memory. Never calls the product.
 

@@ -17,7 +17,7 @@ Resolve code roots:
 
 If both roots are missing: stop. Write nothing. Report config fix.
 
-Follow `.cursor/rules/code-repos.mdc` for layout and citation format.
+**Sync before search** (unless the coordinator already synced and said so in the task): for each root you will search, `git fetch origin` then `git pull --ff-only` on the current tracking branch. Windows `Filename too long` → retry with `git -c core.longpaths=true …`. Dirty tree / failed ff-only / unexpected local changes → stop, report, do not `reset --hard` without explicit human instruction. Follow `.cursor/rules/code-repos.mdc` (layout, citation, sync section).
 
 ## Inputs
 

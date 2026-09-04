@@ -9,7 +9,7 @@ description: Builds atomic test cases in git from a ready requirement card. Use 
 
 1. Resolve the single product id (v1: `upservice` if that is the only folder). If `raw/_incoming/` is not empty, stop.
 2. Find `memory/<id>/requirements/<slug>.md` (ticket id → `task-<id>`). If missing or `status` is not `ready`, stop. Tell the user to run `analyze-requirement` first. Do not start specifier, hunter, or invent Testable text.
-3. Launch `specifier` with `mode: testdocs`, the requirement path, and the **Atomic cases** rules below. If the Task harness has no `specifier` type, use `generalPurpose` instructed to follow `.cursor/agents/specifier.md` verbatim with `mode: testdocs`. Specifier writes `_incoming/testdocs.md` without case ids. Case `title` must match the language of `action`/`expected` (Russian for Upservice Testable). No Figma, no product API, no Testmo.
+3. Launch `specifier` with `mode: testdocs`, the requirement path, and the **Atomic cases** and **Порядок кейсов** rules below. If the Task harness has no `specifier` type, use `generalPurpose` instructed to follow `.cursor/agents/specifier.md` verbatim with `mode: testdocs`. Specifier writes `_incoming/testdocs.md` without case ids. Case `title` must match the language of `action`/`expected` (Russian for Upservice Testable). Smoke cases first with `tier: smoke`. No Figma, no product API, no Testmo.
 4. After MANIFEST lists `testdocs.md`, launch `librarian` with goal `testdoc`. Librarian runs `tools/testdoc_merge.py` (writes `testdocs/md/<slug>.md`) then `tools/testdoc_csv.py` (writes `testdocs/csv/<slug>.csv`).
 5. Report the suite path, CSV path, active count, orphan count, and gaps. Say testdocs are ready only if both files exist and `py -3 tools/memory_schema.py memory/<id>` would pass.
 6. Never write to Upservice or Testmo. Do not use browser MCP or Figma MCP.
@@ -54,6 +54,25 @@ description: Builds atomic test cases in git from a ready requirement card. Use 
 
 Один сценарий с одним логическим исходом оставить одним кейсом (например «события из дополнительного календаря отображаются», «клик открывает read-only», «синхронизация не ломается»).
 
+### Порядок кейсов (smoke → глубокие)
+
+Кейсы в incoming и в итоговом чек-листе идут **сначала smoke, затем более глубокие**. Это порядок исполнения при `verify-testdocs` (smoke-gate).
+
+**Что считать smoke** (`tier: smoke`):
+
+- happy path основного сценария;
+- видимость ключевого элемента или результата;
+- базовая доступность функции без вариаций.
+
+Обычно 1–3 кейса на сьют. **Не** помечать smoke: вариации типов/полей/представлений, граничные и негативные случаи, вторичные эффекты, детальные проверки отдельных атрибутов.
+
+**Как упорядочивать:**
+
+1. Разбить Testable на атомарные кейсы (см. выше).
+2. Выбрать smoke-кандидаты; проставить `tier: smoke`.
+3. В `## Cases` записать **сначала все smoke**, **затем остальные** — внутри каждой группы порядок логичен для ручного прогона (от простого к сложному).
+4. Остальные кейсы **без** поля `tier`.
+
 ### Формат incoming
 
-См. `fixtures/demo-testdoc/incoming/testdocs.md`: `### case` без `tc-…` id; поля `title`, `action`, `expected` only; затем `## Gaps`.
+См. `fixtures/demo-testdoc/incoming/testdocs.md`: `### case` без `tc-…` id; поля `title`, `action`, `expected`; опционально `tier: smoke`; затем `## Gaps`.

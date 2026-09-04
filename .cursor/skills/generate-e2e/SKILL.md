@@ -15,4 +15,9 @@ description: Maps and runs Playwright UI tests for one testdoc suite via an exte
    - If MANIFEST also lists `e2e-run.md`, launch `librarian` with goal covering both `e2e` and `e2e-run` (map first, then run).
    - If only `e2e.md`, launch `librarian` with goal `e2e` (draft map only).
 6. Report paths, missing/written counts, and pass/fail/blocked/skipped if run exists. Say e2e is ready only if `e2e/<slug>.md` has `status: ready`, `e2e-runs/<slug>.md` exists, and `py -3 tools/memory_schema.py memory/<id>` would pass.
+
+   If map is `draft` because UI cases are `map_status: missing`, report missing tc-ids and reasons from `## Gaps` (see `.cursor/reference/e2e-gaps-patterns.md`). Do not claim full e2e readiness.
+
+   For date/TZ-sensitive suites, note that first pytest run should use single worker (`-n 1`) from playwright root.
+
 7. Never write to Upservice or Testmo. Do not modify `runs/`. Do not start generate-testdocs, analyze-requirement, or verify-testdocs from this skill.

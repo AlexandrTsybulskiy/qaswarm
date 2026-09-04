@@ -29,8 +29,15 @@ channel_class: ui
 map_status: out_of_scope
 reason: orphan
 
+### tc-1-4
+title: Scrollbar appearance
+channel_class: ui
+map_status: missing
+reason: pure visual; no stable locator
+
 ## Gaps
 
-- none
+- tc-1-4 left missing (visual scrollbar); e2e-run.md not written until all UI-active cases are bound or explicitly missing with reason.
+- For Virtuoso lists in real suites, see playwright root `.cursor/reference/virtuoso-scroll.md`; document pointer here, not the algorithm.
 
 Did not write to Upservice or Testmo.
