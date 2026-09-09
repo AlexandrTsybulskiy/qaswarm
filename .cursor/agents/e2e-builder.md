@@ -19,7 +19,7 @@ py -3 tools/e2e_scan.py --root <playwright_root>
    Exit 2 → stop; write nothing canonical; report duplicate marker failure. Do not invent bindings.
 5. For each active UI case without binding: write or extend a pytest test under playwright root following that repo's skills/rules (`write-ui-test` / `write-e2e-test`, page objects, fixtures). Every new or extended test MUST have `@pytest.mark.qaswarm_tc("<tc-id>")`.
 
-   Before writing, read `.cursor/reference/e2e-gaps-patterns.md` (this repo) and applicable files under `<playwright.root>/.cursor/reference/` (e.g. `virtuoso-scroll.md`). Do not duplicate Playwright algorithms in qaswarm incoming.
+   Before writing, read `.cursor/reference/e2e-gaps-patterns.md` (this repo) and applicable files under `<playwright.root>/.cursor/reference/` (e.g. `virtuoso-scroll.md`, `dashboard-widgets.md`). Do not duplicate Playwright algorithms in qaswarm incoming.
 
 6. Re-scan. If any active UI case still lacks a binding → write `_incoming/e2e.md` with `map_status: missing` for those, API as `out_of_scope`, **do not** write `e2e-run.md`. MANIFEST lists only `e2e.md`. Stop.
 7. If all active UI cases are mapped/written: run pytest for those nodeids only. Default command if unset: from playwright root, `py -3 run-tests.py <nodeid>…` or `py -3 -m pytest <nodeid>…` — use `run_command` from config when provided. Parse pass/fail/blocked/skipped per tc-id.
@@ -28,7 +28,7 @@ py -3 tools/e2e_scan.py --root <playwright_root>
 
 ## Playwright repo references
 
-After resolving `playwright.root`, read applicable `<playwright.root>/.cursor/reference/` files before implementing UI interactions. Virtuoso / virtual lists → implement scroll on Widget PO per playwright `virtuoso-scroll.md`; note usage in incoming `## Gaps`.
+After resolving `playwright.root`, read applicable `<playwright.root>/.cursor/reference/` files before implementing UI interactions. Virtuoso / virtual lists → implement scroll on Widget PO per playwright `virtuoso-scroll.md`; dashboard widgets → `dashboard-widgets.md`. Note usage in incoming `## Gaps`.
 
 ## Frontend signals (trace before write)
 
@@ -41,8 +41,9 @@ When frontend search finds `Virtuoso`, `customScrollParent`, or a scroll contain
 ## Heavy multi-case suites (15+ UI-active on one screen)
 
 - Prefer `scope="module"` seed fixture + frozen dataclass (`titles`, `ids`, `days` dicts)
-- One test module; `@pytest.mark.qaswarm_tc` per case
+- One test module; `@pytest.mark.qaswarm_tc` per case (one test may list **multiple different** tc-ids when one assert covers two atomic cases)
 - Parametrize when cases differ only by entity kind, badge, or label
+- Dashboard widgets: also follow playwright `.cursor/reference/dashboard-widgets.md`
 
 ## Date / ISO week / timezone-sensitive testdocs
 

@@ -16,6 +16,7 @@
 | task-5106553 | 5106553 | ready | [task-5106553.md](task-5106553.md) |
 | task-5126514 | 5126514 | ready | [task-5126514.md](task-5126514.md) |
 | task-5142705 | 5142705 | ready | [task-5142705.md](task-5142705.md) |
+| task-5152925 | 5152925 | ready | [task-5152925.md](task-5152925.md) |
 | task-5152936 | 5152936 | ready | [task-5152936.md](task-5152936.md) |
 | task-5168563 | 5168563 | ready | [task-5168563.md](task-5168563.md) |
 | task-5187935 | 5187935 | ready | [task-5187935.md](task-5187935.md) |
