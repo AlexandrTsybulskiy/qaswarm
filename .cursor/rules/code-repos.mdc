@@ -41,7 +41,18 @@ When the human asks how/where something is implemented on the **client** and/or 
 3. If the working tree is dirty, ff-only fails, or unexpected local changes block pull: **stop**, report status, ask how to proceed. Do **not** `reset --hard` / discard work unless the human explicitly chooses that.
 4. After a successful sync, briefly note the tip commit(s), then search.
 
-Do not sync the Playwright repo for this rule. Do not sync on unrelated memory/recall questions.
+Do not sync the Playwright repo for **this** rule (product lookup only). Do not sync on unrelated memory/recall questions.
+
+## Sync Playwright before e2e write
+
+When running `generate-e2e` / `e2e-builder` (before scan, map, or writing tests):
+
+1. Resolve `playwright.root` via config / `tools/e2e_scan.resolve_playwright_root`.
+2. **Before any scan/write** in that repo: `git fetch origin` then `git pull --ff-only` on the checked-out tracking branch (usually `develop`). Windows `Filename too long` → retry with `git -c core.longpaths=true …` (do not change global git config unless the human asks).
+3. If the working tree is dirty, ff-only fails, or unexpected local changes block pull: **stop**, report status, ask how to proceed. Do **not** `reset --hard` / discard work unless the human explicitly chooses that.
+4. After a successful sync, briefly note the tip commit, then continue (scan markers, write tests).
+
+Frontend sync for e2e-builder UI lookup still follows **Sync before implementation lookup** above when searching product code.
 
 ## When to search code
 
@@ -49,7 +60,7 @@ Do not sync the Playwright repo for this rule. Do not sync on unrelated memory/r
 |---------------|---------------------|
 | `trace-code` | User asks where/how something is implemented or to compare code vs requirement |
 | `specifier` (`requirement` / `full`) | Optional: add `## Implementation hints` with unverified paths |
-| `e2e-builder` | Before writing UI tests: find components, `data-qa`, routes in frontend; read `<playwright.root>/.cursor/reference/` and skills in playwright repo — conventions stay there, gaps documented in qaswarm `e2e/` cards |
+| `e2e-builder` | Sync Playwright root first; before writing UI tests: find components, `data-qa`, routes in frontend; read `<playwright.root>/.cursor/reference/` and skills in playwright repo — conventions stay there, gaps documented in qaswarm `e2e/` cards |
 | `verifier` | When UI case is `blocked`: optional hint in run `## Gaps` (do not fail on missing code) |
 | `recall` | After memory miss on API entity: optional cross-check in `public_api` code |
 

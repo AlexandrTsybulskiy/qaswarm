@@ -19,9 +19,16 @@
 | task-5250593 | 5250593 | ready | 9 | [task-5250593.md](md/task-5250593.md) |
 | task-5272210 | 5272210 | ready | 18 | [task-5272210.md](md/task-5272210.md) |
 | task-5284750 | 5284750 | ready | 12 | [task-5284750.md](md/task-5284750.md) |
-| task-5284852 | 5284852 | ready | 9 | [task-5284852.md](md/task-5284852.md) |
+| task-5284852 | 5284852 | ready | 10 | [task-5284852.md](md/task-5284852.md) |
 | task-5285847 | 5285847 | ready | 15 | [task-5285847.md](md/task-5285847.md) |
 | task-5294716 | 5294716 | ready | 38 | [task-5294716.md](md/task-5294716.md) |
 | task-5294830 | 5294830 | ready | 18 | [task-5294830.md](md/task-5294830.md) |
 | task-5295011 | 5295011 | ready | 38 | [task-5295011.md](md/task-5295011.md) |
 | task-5295099 | 5295099 | ready | 16 | [task-5295099.md](md/task-5295099.md) |
+| task-5322690 | 5322690 | ready | 8 | [task-5322690.md](md/task-5322690.md) |
+| task-5363586 | 5363586 | ready | 5 | [task-5363586.md](md/task-5363586.md) |
+| task-5363591 | 5363591 | ready | 18 | [task-5363591.md](md/task-5363591.md) |
+| task-5372904 | 5372904 | ready | 8 | [task-5372904.md](md/task-5372904.md) |
+| task-5373264 | 5373264 | ready | 14 | [task-5373264.md](md/task-5373264.md) |
+| task-5374161 | 5374161 | ready | 11 | [task-5374161.md](md/task-5374161.md) |
+| task-5410315 | 5410315 | ready | 77 | [task-5410315.md](md/task-5410315.md) |

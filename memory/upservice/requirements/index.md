@@ -43,3 +43,10 @@
 | task-5295011 | 5295011 | ready | [task-5295011.md](task-5295011.md) |
 | task-4916809 | 4916809 | ready | [task-4916809.md](task-4916809.md) |
 | task-5295099 | 5295099 | ready | [task-5295099.md](task-5295099.md) |
+| task-5322690 | 5322690 | ready | [task-5322690.md](task-5322690.md) |
+| task-5363586 | 5363586 | ready | [task-5363586.md](task-5363586.md) |
+| task-5363591 | 5363591 | ready | [task-5363591.md](task-5363591.md) |
+| task-5372904 | 5372904 | ready | [task-5372904.md](task-5372904.md) |
+| task-5373264 | 5373264 | ready | [task-5373264.md](task-5373264.md) |
+| task-5374161 | 5374161 | ready | [task-5374161.md](task-5374161.md) |
+| task-5410315 | 5410315 | ready | [task-5410315.md](task-5410315.md) |
