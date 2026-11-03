@@ -31,4 +31,6 @@
 | task-5372904 | 5372904 | ready | 8 | [task-5372904.md](md/task-5372904.md) |
 | task-5373264 | 5373264 | ready | 14 | [task-5373264.md](md/task-5373264.md) |
 | task-5374161 | 5374161 | ready | 11 | [task-5374161.md](md/task-5374161.md) |
+| task-5395198 | 5395198 | ready | 11 | [task-5395198.md](md/task-5395198.md) |
 | task-5410315 | 5410315 | ready | 77 | [task-5410315.md](md/task-5410315.md) |
+| task-5432296 | 5432296 | ready | 25 | [task-5432296.md](md/task-5432296.md) |
